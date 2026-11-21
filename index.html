@@ -705,7 +705,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     const printButton=e.target.closest('[data-print-appt]');
     if(printButton)printMeasurementForm(printButton.getAttribute('data-print-appt'));
   });
-  $('topAdd').onclick=$('sideAdd').onclick=openModal;
+  $('topAdd').onclick=$('sideAdd').onclick=()=>openModal();
   $('closeModal').onclick=$('cancelModal').onclick=closeModal;
   $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
