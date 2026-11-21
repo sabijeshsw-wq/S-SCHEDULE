@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Schedule — Appointment Calendar</title>
+<title>Smart Schedule — Measurement Appointment</title>
 <style>
 :root{
   --bg:#f5f7fb;--surface:#fff;--ink:#172033;--muted:#778197;--line:#e8ecf3;
@@ -72,6 +72,7 @@ button{cursor:pointer}
 .appt-time{font-size:11px;color:#68748b;font-weight:700}
 .status{font-size:9px;font-weight:750;padding:4px 7px;border-radius:20px;background:#fff5e6;color:#ad7418}
 .status.Confirmed{background:#e9f7f1;color:#16835f}
+.btn.danger{color:#c34c57;border-color:#f1cdd1}
 .status.Completed{background:#e9f7f1;color:#16835f}
 .status.Cancelled{background:#fff0f0;color:#c34c57}
 .status.Rescheduled{background:#f4efff;color:#795bc0}
@@ -132,7 +133,7 @@ form{padding:20px 22px}
 #printArea{display:none}
 .print-action{margin-top:9px;font-size:10px;padding:6px 9px}
 @media print{
-  @page{size:A4 portrait;margin:12mm}
+  @page{size:A4 portrait;margin:0}
   body{background:#fff!important;color:#111!important}
   body.printing>*:not(#printArea){display:none!important}
   body.printing #printArea{display:block!important}
@@ -140,8 +141,7 @@ form{padding:20px 22px}
   #printArea h1{font-size:21px;margin:0 0 4px}
   #printArea h2{font-size:16px;margin:18px 0 8px}
   #printArea .print-sub{color:#555;margin-bottom:16px}
-  #printArea .print-meta{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:9px;margin-bottom:14px}
-  #printArea table{width:100%;border-collapse:collapse;margin-top:10px}
+   #printArea table{width:100%;border-collapse:collapse;margin-top:10px}
   #printArea th,#printArea td{border:1px solid #bbb;padding:7px;text-align:left;vertical-align:top}
   #printArea th{background:#f0f2f5}
   #printArea .print-section{margin:12px 0}
@@ -149,11 +149,9 @@ form{padding:20px 22px}
   #printArea .measurement-grid{width:100%;border-collapse:collapse;margin-top:12px}
   #printArea .measurement-grid th,#printArea .measurement-grid td{height:34px}
   #printArea .muted{color:#555}
-  #printArea .print-footer{margin-top:22px;border-top:1px solid #bbb;padding-top:8px;font-size:9px;color:#555}
-  #printArea .site-form{border:1px solid #777;min-height:265mm;padding:16mm 13mm;box-sizing:border-box;page-break-after:always;break-after:page}
+   #printArea .site-form{border:1px solid #777;min-height:273mm;margin:12mm;padding:16mm 13mm;box-sizing:border-box;page-break-after:always;break-after:page}
   #printArea .site-form:last-child{page-break-after:auto;break-after:auto}
-  #printArea .site-form h1{font-size:21px;text-align:center;margin:0 0 22px;font-weight:700;letter-spacing:.2px}
-  #printArea .site-table{width:86%;margin:0 auto;border-collapse:collapse;table-layout:fixed}
+   #printArea .site-table{width:86%;margin:0 auto;border-collapse:collapse;table-layout:fixed}
   #printArea .site-table td{border:1px solid #777;padding:5px 6px;height:25px;font-size:11px}
   #printArea .site-table .site-label{font-weight:700;width:25%;white-space:nowrap}
   #printArea .site-table .site-value{width:75%}
@@ -183,7 +181,7 @@ form{padding:20px 22px}
   <section class="auth-card">
     <div class="brand" style="margin-bottom:22px">
       <div class="logo">S</div>
-      <div><h1>Smart Schedule</h1><p>Measurement & appointment planner</p></div>
+      <div><h1>Smart Schedule</h1><p>Measurement Appointment</p></div>
     </div>
     <h2>Welcome</h2>
     <p>Select how you want to sign in.</p>
@@ -228,13 +226,12 @@ form{padding:20px 22px}
   <header class="topbar">
     <div class="brand">
       <div class="logo">S</div>
-      <div><h1>Smart Schedule</h1><p>Measurement & appointment planner</p></div>
+      <div><h1>Smart Schedule</h1><p>Measurement Appointment</p></div>
     </div>
     <div class="top-actions">
       <div class="user-chip"><span class="avatar" id="userAvatar">U</span><span id="userEmail">Signed in</span></div>
       <button class="btn" id="signOutBtn">Sign out</button>
-      <button class="btn primary" id="topAdd">＋ New appointment</button>
-    </div>
+   </div>
   </header>
 
   <section class="employee-admin-panel" id="employeeAdminPanel">
@@ -489,6 +486,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px">
         <button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button>
         <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print measurement form</button>
+        <button type="button" class="btn print-action danger" data-delete-appt="${escapeHtml(a.id)}">Delete</button>
       </div>
     </article>`).join('');
   }
@@ -520,14 +518,21 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     setTimeout(()=>t.classList.remove('show'),2800);
   }
 
+  async function deleteAppointment(id){
+    const appointment=appointments.find(item=>String(item.id)===String(id));
+    if(!appointment){toast('Appointment not found.');return;}
+    if(!window.confirm(`Delete the appointment for ${appointment.client}? This cannot be undone.`))return;
+    const {data,error}=await supabase.from('appointments').delete().eq('id',id).select('id');
+    if(error){toast(`Could not delete: ${error.message}`);return;}
+    if(!data || data.length===0){toast('Could not delete appointment. Check your delete permissions.');return;}
+    await loadAppointments();
+    toast('Appointment deleted.');
+  }
+
   function printShell(title, subtitle, content){
     const area=$('printArea');
     area.innerHTML=`
-      <h1>Smart Schedule</h1>
-      <div class="print-sub">${escapeHtml(title)}${subtitle?` · ${escapeHtml(subtitle)}`:''}</div>
-      <div class="print-meta"><span>Appointment workspace</span><span>Printed: ${new Date().toLocaleString()}</span></div>
-      ${content}
-      <div class="print-footer">Smart Schedule · Keep this document with the relevant customer/job record.</div>`;
+     ${content}`;
     document.body.classList.add('printing');
     window.addEventListener('afterprint',function cleanup(){
       document.body.classList.remove('printing');
@@ -543,8 +548,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     const dateText=prettyDate(a.date,{day:'2-digit',month:'short',year:'numeric',weekday:'long'});
     return `
       <div class="site-form">
-        <h1>SITE MEASUREMENT FORM</h1>
-        <table class="site-table">
+       <table class="site-table">
           <tbody>
             <tr><td class="site-label">CLIENT NAME</td><td class="site-value" colspan="3">${safe(a.client)}</td></tr>
             <tr><td class="site-label">CONTACT NO</td><td class="site-value" colspan="3">${safe(a.phone)}</td></tr>
@@ -702,9 +706,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     const editButton=e.target.closest('[data-edit-appt]');
     if(editButton){openModal(editButton.getAttribute('data-edit-appt'));return;}
     const printButton=e.target.closest('[data-print-appt]');
-    if(printButton)printMeasurementForm(printButton.getAttribute('data-print-appt'));
+    if(printButton){printMeasurementForm(printButton.getAttribute('data-print-appt'));return;}
+    const deleteButton=e.target.closest('[data-delete-appt]');
+    if(deleteButton)deleteAppointment(deleteButton.getAttribute('data-delete-appt'));
   });
-  $('topAdd').onclick=$('sideAdd').onclick=()=>openModal();
+  $('sideAdd').onclick=()=>openModal();
   $('closeModal').onclick=$('cancelModal').onclick=closeModal;
   $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
