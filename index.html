@@ -54,7 +54,7 @@ button{cursor:pointer}
 .day.today .date-num{background:var(--primary);color:#fff}
 .day-head{display:flex;justify-content:space-between;align-items:center}
 .date-num{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:650}
-.count{font-size:10px;color:#4e61d4;background:#edf0ff;border-radius:20px;padding:3px 6px;font-weight:700;white-space:nowrap}
+.count{font-size:10px;color:#4357c8;background:#eef1ff;border:1px solid #dfe5ff;border-radius:999px;padding:4px 8px;font-weight:750;white-space:nowrap}
 .day-events{display:flex;flex-direction:column;gap:4px}
 .event-mini{font-size:10px;padding:4px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#edf1ff;color:#5265cb;border-left:2px solid #7184ef}
 .event-mini.completed{background:#e9f7f1;color:#16835f;border-color:#36ad82}
@@ -71,6 +71,7 @@ button{cursor:pointer}
 .appt-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .appt-time{font-size:11px;color:#68748b;font-weight:700}
 .status{font-size:9px;font-weight:750;padding:4px 7px;border-radius:20px;background:#fff5e6;color:#ad7418}
+.status.Confirmed{background:#e9f7f1;color:#16835f}
 .status.Completed{background:#e9f7f1;color:#16835f}
 .status.Cancelled{background:#fff0f0;color:#c34c57}
 .status.Rescheduled{background:#f4efff;color:#795bc0}
@@ -311,7 +312,7 @@ form{padding:20px 22px}
         <div class="field full"><label for="address">Address</label><input id="address" placeholder="Customer location"></div>
         <div class="field full"><label for="requirements">Requirements</label><input id="requirements" placeholder="e.g. Master bedroom wardrobe"></div>
         <div class="field"><label for="siteStatus">Site status</label><input id="siteStatus" placeholder="e.g. Ready / Not ready"></div>
-        <div class="field"><label for="status">Appointment status</label><select id="status"><option>Pending</option><option>Completed</option><option>Cancelled</option><option>Rescheduled</option></select></div>
+        <div class="field"><label for="status">Appointment status</label><select id="status"><option>Confirmed</option><option>Pending</option><option>Completed</option><option>Cancelled</option><option>Rescheduled</option></select></div>
         <div class="field full"><label for="notes">Notes</label><textarea id="notes" placeholder="Additional details"></textarea></div>
       </div>
       <div class="form-actions"><button type="button" class="btn" id="cancelModal">Cancel</button><button class="btn primary" type="submit">Save appointment</button></div>
@@ -464,9 +465,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       const cell=document.createElement('button');cell.type='button';cell.className=classes.join(' ');
       cell.setAttribute('aria-label',`${prettyDate(key)}: ${dayItems.length} appointments`);
       const count=dayItems.length?`<span class="count">${dayItems.length} ${dayItems.length===1?'appointment':'appointments'}</span>`:'';
-      const events=dayItems.slice(0,2).map(a=>`<div class="event-mini ${String(a.status).toLowerCase()}" title="${escapeHtml(a.client)}">${escapeHtml(a.time?a.time+' · ':'')}${escapeHtml(a.client)}</div>`).join('');
-      const more=dayItems.length>2?`<div class="more">+${dayItems.length-2} more</div>`:'';
-      cell.innerHTML=`<div class="day-head"><span class="date-num">${d.getDate()}</span>${count}</div><div class="day-events">${events}${more}</div>`;
+      cell.innerHTML=`<div class="day-head"><span class="date-num">${d.getDate()}</span>${count}</div>`;
       cell.addEventListener('click',()=>{selectedDate=key;if(d.getMonth()!==shownMonth.getMonth())shownMonth=new Date(d.getFullYear(),d.getMonth(),1);render();});
       cal.appendChild(cell);
     }
@@ -511,7 +510,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     }else{
       $('modalTitle').textContent='New appointment';
       saveButton.textContent='Save appointment';
-      $('date').value=selectedDate;$('status').value='Pending';
+      $('date').value=selectedDate;$('status').value='Confirmed';
     }
     $('modalBackdrop').classList.add('open');$('client').focus();
   }
