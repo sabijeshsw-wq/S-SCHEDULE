@@ -149,41 +149,76 @@ form{padding:20px 22px}
   #printArea .measurement-grid th,#printArea .measurement-grid td{height:34px}
   #printArea .muted{color:#555}
   #printArea .print-footer{margin-top:22px;border-top:1px solid #bbb;padding-top:8px;font-size:9px;color:#555}
+  #printArea .site-form{border:1px solid #777;min-height:265mm;padding:16mm 13mm;box-sizing:border-box;page-break-after:always;break-after:page}
+  #printArea .site-form:last-child{page-break-after:auto;break-after:auto}
+  #printArea .site-form h1{font-size:21px;text-align:center;margin:0 0 22px;font-weight:700;letter-spacing:.2px}
+  #printArea .site-table{width:86%;margin:0 auto;border-collapse:collapse;table-layout:fixed}
+  #printArea .site-table td{border:1px solid #777;padding:5px 6px;height:25px;font-size:11px}
+  #printArea .site-table .site-label{font-weight:700;width:25%;white-space:nowrap}
+  #printArea .site-table .site-value{width:75%}
+  #printArea .site-table .half-label{width:18%;font-weight:700;white-space:nowrap}
+  #printArea .site-table .half-value{width:32%}
+  #printArea .site-notes{width:86%;margin:8px auto 0;font-weight:700;font-size:11px}
+  #printArea .site-notes-space{width:86%;margin:0 auto;min-height:35px;border-bottom:1px solid #777}
 }
 
+
+/* Admin and colleague login choice */
+.login-choice{display:grid;gap:12px;margin-top:22px}
+.choice-btn{display:flex;align-items:center;gap:14px;text-align:left;padding:16px;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--ink);width:100%}
+.choice-icon{width:42px;height:42px;border-radius:12px;background:#eef1ff;color:#4f63d6;display:grid;place-items:center;font-size:21px;flex:none}
+.back-choice{margin:0 0 16px;padding:0;background:none;border:0;color:var(--primary);font-weight:700;font-size:12px}
+.employee-admin-panel{display:none;background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin:0 0 20px;box-shadow:var(--shadow)}
+.employee-admin-panel h3{margin:0 0 5px;font-size:17px}.employee-admin-panel p{margin:0 0 15px;color:var(--muted);font-size:12px}
+.employee-create-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}
+.employee-create-grid .field{margin:0}.employee-admin-message{margin-top:12px;font-size:13px;color:var(--muted)}
+.employee-admin-message.error{color:var(--red)}.employee-admin-message.success{color:var(--green)}
+@media(max-width:800px){.employee-create-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.employee-create-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="auth-wrap" id="rememberScreen" style="display:none">
-  <section class="auth-card" style="text-align:center">
-    <div class="brand" style="justify-content:center;margin-bottom:22px">
-      <div class="logo">S</div><div style="text-align:left"><h1>Smart Schedule</h1><p>Appointment workspace</p></div>
+<div class="auth-wrap" id="choiceScreen">
+  <section class="auth-card">
+    <div class="brand" style="margin-bottom:22px">
+      <div class="logo">S</div>
+      <div><h1>Smart Schedule</h1><p>Measurement & appointment planner</p></div>
     </div>
-    <h2>Welcome back</h2>
-    <p id="rememberedUserLabel">Your account is saved on this browser.</p>
-    <button class="btn primary" id="rememberSignIn" type="button" style="width:100%">Sign in</button>
-    <button class="text-btn" id="useDifferentAccount" type="button" style="margin-top:12px">Use a different account</button>
+    <h2>Welcome</h2>
+    <p>Select how you want to sign in.</p>
+    <div class="login-choice">
+      <button class="choice-btn" id="adminChoice" type="button">
+        <span class="choice-icon">♙</span><span><strong>Admin Login</strong><small>Administrator access and system management</small></span>
+      </button>
+      <button class="choice-btn" id="employeeChoice" type="button">
+        <span class="choice-icon">♧</span><span><strong>Colleague Login</strong><small>Open the appointment calendar with your username and PIN</small></span>
+      </button>
+    </div>
+    <div class="auth-message" id="choiceMessage"></div>
   </section>
 </div>
 
-<div class="auth-wrap" id="authScreen">
+<div class="auth-wrap" id="authScreen" style="display:none">
   <section class="auth-card">
     <div class="brand" style="margin-bottom:22px">
       <div class="logo">S</div>
       <div><h1>Smart Schedule</h1><p>Secure appointment workspace</p></div>
     </div>
+    <button class="back-choice" id="backToChoices" type="button">← Back to login options</button>
     <div class="config-warning" id="configWarning" style="display:none">
       Supabase connection details are not configured yet. Add your Project URL and anon/publishable key in the configuration section of this HTML file.
     </div>
-    <h2 id="authTitle">Welcome back</h2>
-    <p id="authSubtitle">Sign in to access your appointment calendar.</p>
+    <h2 id="authTitle">Colleague Login</h2>
+    <p id="authSubtitle">Enter your username and PIN to continue.</p>
     <form id="authForm">
-      <div class="field"><label for="authUsername">Username</label><input id="authUsername" type="text" required minlength="3" maxlength="30" autocomplete="username" placeholder="Enter your username" autocapitalize="none"></div>
-      <div class="field"><label for="authPin">6-digit PIN</label><input id="authPin" type="password" required inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="current-password" placeholder="Enter your PIN"></div>
+      <div class="field" id="adminEmailField" style="display:none"><label for="adminEmail">Email address</label><input id="adminEmail" type="email" autocomplete="username" placeholder="Enter administrator email"></div>
+      <div class="field" id="adminPasswordField" style="display:none"><label for="adminPassword">Password</label><input id="adminPassword" type="password" autocomplete="current-password" placeholder="Enter password"></div>
+      <div class="field" id="colleagueUsernameField"><label for="authUsername">Username</label><input id="authUsername" type="text" required minlength="3" maxlength="30" autocomplete="username" placeholder="Enter your username" autocapitalize="none"></div>
+      <div class="field" id="colleaguePinField"><label for="authPin">6-digit PIN</label><input id="authPin" type="password" required inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="current-password" placeholder="Enter your PIN"></div>
       <button class="btn primary" id="authSubmit" type="submit" style="width:100%">Sign in</button>
     </form>
     <div class="auth-message" id="authMessage"></div>
-    <div class="auth-links"><span>Employee access</span><span>Contact your administrator for an account.</span></div>
+    <div class="auth-links"><span id="authAccessLabel">Colleague access</span><span>Contact your administrator for help.</span></div>
   </section>
 </div>
 
@@ -200,6 +235,20 @@ form{padding:20px 22px}
       <button class="btn primary" id="topAdd">＋ New appointment</button>
     </div>
   </header>
+
+  <section class="employee-admin-panel" id="employeeAdminPanel">
+    <h3>Colleague account management</h3>
+    <p>Create login details for your colleagues. Only the administrator can access this section.</p>
+    <form id="createEmployeeForm">
+      <div class="employee-create-grid">
+        <div class="field"><label for="newEmployeeName">Colleague name</label><input id="newEmployeeName" required maxlength="60" placeholder="e.g. Ahmed"></div>
+        <div class="field"><label for="newEmployeeUsername">Username</label><input id="newEmployeeUsername" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none" placeholder="e.g. ahmed"></div>
+        <div class="field"><label for="newEmployeePin">6-digit PIN</label><input id="newEmployeePin" required type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="Create PIN"></div>
+        <button class="btn primary" id="createEmployeeBtn" type="submit">＋ Create colleague</button>
+      </div>
+    </form>
+    <div class="employee-admin-message" id="employeeAdminMessage" aria-live="polite"></div>
+  </section>
 
   <section class="heading">
     <div><h2>Appointment calendar</h2><p>Plan, organize and track your measurement appointments.</p></div>
@@ -223,7 +272,6 @@ form{padding:20px 22px}
         <div class="toolbar-right">
           <button class="btn today" id="todayBtn">Today</button>
           <button class="btn" id="viewLabel" disabled>Month view</button>
-          <button class="btn" id="printMonthBtn" type="button">🖨 Print month</button>
         </div>
       </div>
       <div class="calendar" id="calendar"></div>
@@ -291,8 +339,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
   let appointments = [];
   let shownMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let selectedDate = iso(new Date());
-  let authMode = "signin";
+  let authMode = "employee";
+  let savedSession = null;
   let realtimeChannel = null;
+  let editingAppointmentId = null;
 
   function iso(d){
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -306,29 +356,64 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
   function showAuthMessage(message, type="error"){
     const box=$('authMessage');box.textContent=message;box.className=`auth-message ${type}`;
   }
+  function setAuthMode(mode){
+    authMode=mode;
+    $('authTitle').textContent=mode==="signin"?"Welcome back":"Create your account";
+    $('authSubtitle').textContent=mode==="signin"?"Sign in to access your appointment calendar.":"Create an employee login for Smart Schedule.";
+    $('authSubmit').textContent=mode==="signin"?"Sign in":"Create account";
+    $('authSwitchText').textContent=mode==="signin"?"New employee?":"Already have an account?";
+    $('authSwitch').textContent=mode==="signin"?"Create account":"Sign in";
+    $('authPassword').autocomplete=mode==="signin"?"current-password":"new-password";
+    $('authMessage').className="auth-message";
+  }
   function showApp(user){
     currentUser=user;
     $('authScreen').style.display='none';
+    $('choiceScreen').style.display='none';
     $('appRoot').style.display='block';
-    const employeeName = user.user_metadata?.display_name || user.user_metadata?.username || user.email || "Employee";
+    const employeeName=user.user_metadata?.display_name || user.user_metadata?.username || user.email || 'Employee';
     $('userEmail').textContent=employeeName;
     $('userAvatar').textContent=employeeName.charAt(0).toUpperCase();
+    $('employeeAdminPanel').style.display=isAdmin(user)?'block':'none';
     loadAppointments();
     subscribeToChanges();
   }
   function showLogin(){
     currentUser=null;
+    savedSession=null;
     $('appRoot').style.display='none';
-    $('rememberScreen').style.display='none';
-    $('authScreen').style.display='grid';
+    $('authScreen').style.display='none';
+    $('choiceScreen').style.display='grid';
+    $('authPin').value='';
+    $('adminPassword').value='';
     if(realtimeChannel){supabase.removeChannel(realtimeChannel);realtimeChannel=null;}
   }
-  function showRememberScreen(user){
-    $('authScreen').style.display='none';
-    $('appRoot').style.display='none';
-    $('rememberScreen').style.display='grid';
-    const savedName=localStorage.getItem('smartScheduleRememberedName') || user.email || 'Saved employee';
-    $('rememberedUserLabel').textContent=savedName+' is saved on this browser.';
+  function chooseLogin(mode){
+    authMode=mode;
+    $('choiceScreen').style.display='none';
+    $('authScreen').style.display='grid';
+    $('authTitle').textContent=mode==='admin'?'Administrator Login':'Colleague Login';
+    $('authSubtitle').textContent=mode==='admin'?'Sign in with your administrator email address and password.':'Enter your username and PIN to continue.';
+    $('authAccessLabel').textContent=mode==='admin'?'Administrator access':'Colleague access';
+    $('adminEmailField').style.display=mode==='admin'?'block':'none';
+    $('adminPasswordField').style.display=mode==='admin'?'block':'none';
+    $('colleagueUsernameField').style.display=mode==='admin'?'none':'block';
+    $('colleaguePinField').style.display=mode==='admin'?'none':'block';
+    $('adminEmail').required=mode==='admin';
+    $('adminPassword').required=mode==='admin';
+    $('authUsername').required=mode!=='admin';
+    $('authPin').required=mode!=='admin';
+    $('authMessage').className='auth-message';
+    $('authForm').reset();
+    if(savedSession){
+      const user=savedSession.user;
+      if(mode==='admin' && isAdmin(user)) { showApp(user); return; }
+      if(mode==='employee' && !isAdmin(user) && (user.user_metadata?.username || user.user_metadata?.display_name)) { showApp(user); return; }
+    }
+  }
+  function isAdmin(user){
+    const role=user?.app_metadata?.role;
+    return user?.app_metadata?.is_admin===true || String(role||'').toLowerCase()==='admin';
   }
   async function loadAppointments(){
     $('appointmentList').innerHTML='<div class="empty"><strong>Loading appointments…</strong><span>Connecting to your shared schedule.</span></div>';
@@ -402,14 +487,35 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       <h4>${escapeHtml(a.client)}</h4><p>${escapeHtml(a.requirements||'No requirements added')}</p>
       <div class="appt-meta"><span>${escapeHtml(a.sales||'No salesperson')}</span><span>${escapeHtml(a.measurer||'No measurer')}</span></div>
       ${a.phone?`<div class="appt-meta">${escapeHtml(a.phone)}</div>`:''}
-      <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print measurement form</button>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px">
+        <button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button>
+        <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print measurement form</button>
+      </div>
     </article>`).join('');
   }
-  function openModal(){
-    $('appointmentForm').reset();$('date').value=selectedDate;$('status').value='Pending';
+  function openModal(id=null){
+    $('appointmentForm').reset();
+    editingAppointmentId=id===null?null:String(id);
+    const saveButton=$('appointmentForm').querySelector('button[type="submit"]');
+    if(editingAppointmentId){
+      const a=appointments.find(item=>String(item.id)===editingAppointmentId);
+      if(!a){editingAppointmentId=null;toast('Appointment not found.');return;}
+      $('modalTitle').textContent='Edit appointment';
+      saveButton.textContent='Update appointment';
+      $('client').value=a.client||'';$('phone').value=a.phone||'';
+      $('date').value=a.date||selectedDate;$('time').value=a.time||'';
+      $('sales').value=a.sales||'';$('measurer').value=a.measurer||'';
+      $('address').value=a.address||'';$('requirements').value=a.requirements||'';
+      $('siteStatus').value=a.siteStatus||'';$('status').value=a.status||'Pending';
+      $('notes').value=a.notes||'';
+    }else{
+      $('modalTitle').textContent='New appointment';
+      saveButton.textContent='Save appointment';
+      $('date').value=selectedDate;$('status').value='Pending';
+    }
     $('modalBackdrop').classList.add('open');$('client').focus();
   }
-  function closeModal(){$('modalBackdrop').classList.remove('open');}
+  function closeModal(){$('modalBackdrop').classList.remove('open');editingAppointmentId=null;}
   function toast(msg){
     const t=$('toast');t.textContent=msg;t.classList.add('show');
     setTimeout(()=>t.classList.remove('show'),2800);
@@ -432,114 +538,156 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     window.print();
   }
 
-  function printMonth(){
-    const items=monthAppointments().slice().sort((a,b)=>
-      (a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||'')));
-    const rows=items.map(a=>`<tr>
-      <td>${escapeHtml(prettyDate(a.date,{day:'numeric',month:'short',year:'numeric'}))}</td>
-      <td>${escapeHtml(a.time||'—')}</td>
-      <td>${escapeHtml(a.client)}</td>
-      <td>${escapeHtml(a.phone||'—')}</td>
-      <td>${escapeHtml(a.requirements||'—')}</td>
-      <td>${escapeHtml(a.sales||'—')}</td>
-      <td>${escapeHtml(a.status)}</td>
-    </tr>`).join('');
-    printShell('Monthly appointment schedule',shownMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'}),
-      `<p><strong>Total appointments:</strong> ${items.length}</p>
-       <table><thead><tr><th>Date</th><th>Time</th><th>Customer</th><th>Contact</th><th>Requirements</th><th>Salesperson</th><th>Status</th></tr></thead>
-       <tbody>${rows||'<tr><td colspan="7">No appointments for this month.</td></tr>'}</tbody></table>`);
+
+  function measurementFormMarkup(a){
+    const safe=value=>escapeHtml(value||'');
+    const dateText=prettyDate(a.date,{day:'2-digit',month:'short',year:'numeric',weekday:'long'});
+    return `
+      <div class="site-form">
+        <h1>SITE MEASUREMENT FORM</h1>
+        <table class="site-table">
+          <tbody>
+            <tr><td class="site-label">CLIENT NAME</td><td class="site-value" colspan="3">${safe(a.client)}</td></tr>
+            <tr><td class="site-label">CONTACT NO</td><td class="site-value" colspan="3">${safe(a.phone)}</td></tr>
+            <tr><td class="site-label">ADDRESS</td><td class="site-value" colspan="3">${safe(a.address)}</td></tr>
+            <tr>
+              <td class="site-label">DATE</td><td class="site-value">${safe(dateText)}</td>
+              <td class="half-label">TIME</td><td class="half-value">${safe(a.time)}</td>
+            </tr>
+            <tr>
+              <td class="site-label">SALES</td><td class="site-value">${safe(a.sales)}</td>
+              <td class="half-label">MEASURED BY</td><td class="half-value">${safe(a.measurer)}</td>
+            </tr>
+            <tr><td class="site-label">REQUIREMENTS</td><td class="site-value" colspan="3">${safe(a.requirements)}</td></tr>
+            <tr><td class="site-label">SITE STATUS</td><td class="site-value" colspan="3">${safe(a.siteStatus)}</td></tr>
+          </tbody>
+        </table>
+        <div class="site-notes">NOTES:</div>
+        <div class="site-notes-space">${safe(a.notes)}</div>
+      </div>`;
+  }
+
+  function prepareMeasurementPrint(forms){
+    const area=$('printArea');
+    area.innerHTML=forms;
+    document.body.classList.add('printing');
+    window.addEventListener('afterprint',function cleanup(){
+      document.body.classList.remove('printing');
+      area.innerHTML='';
+      window.removeEventListener('afterprint',cleanup);
+    });
+    window.print();
   }
 
   function printDay(){
     const items=appointments.filter(a=>a.date===selectedDate).slice()
       .sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    const rows=items.map(a=>`<tr>
-      <td>${escapeHtml(a.time||'—')}</td><td>${escapeHtml(a.client)}</td>
-      <td>${escapeHtml(a.phone||'—')}</td><td>${escapeHtml(a.requirements||'—')}</td>
-      <td>${escapeHtml(a.sales||'—')}</td><td>${escapeHtml(a.measurer||'—')}</td>
-      <td>${escapeHtml(a.status)}</td>
-    </tr>`).join('');
-    printShell('Daily appointment schedule',prettyDate(selectedDate),
-      `<p><strong>Total appointments:</strong> ${items.length}</p>
-       <table><thead><tr><th>Time</th><th>Customer</th><th>Contact</th><th>Requirements</th><th>Salesperson</th><th>Measured by</th><th>Status</th></tr></thead>
-       <tbody>${rows||'<tr><td colspan="7">No appointments scheduled for this date.</td></tr>'}</tbody></table>`);
+    if(!items.length){toast('No appointments to print for this day.');return;}
+    prepareMeasurementPrint(items.map(measurementFormMarkup).join(''));
   }
 
   function printMeasurementForm(id){
     const a=appointments.find(item=>String(item.id)===String(id));
     if(!a){toast('Appointment not found.');return;}
-    const field=(label,value)=>`<div class="print-field"><strong>${label}:</strong> ${escapeHtml(value||'')}</div>`;
-    printShell('Customer measurement sheet',a.client,
-      `<div class="print-section">
-        ${field('Appointment date',prettyDate(a.date,{day:'numeric',month:'long',year:'numeric'}))}
-        ${field('Time',a.time||'Not specified')}
-        ${field('Contact number',a.phone)}
-        ${field('Address',a.address)}
-        ${field('Requirements',a.requirements)}
-        ${field('Salesperson',a.sales)}
-        ${field('Measured by',a.measurer)}
-        ${field('Site status',a.siteStatus)}
-        ${field('Appointment status',a.status)}
-        ${field('Notes',a.notes)}
-       </div>
-       <h2>Room / wardrobe measurements</h2>
-       <table class="measurement-grid">
-         <thead><tr><th>Room / wall / item</th><th>Width</th><th>Height</th><th>Depth</th><th>Notes</th></tr></thead>
-         <tbody>${Array.from({length:7},()=>'<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('')}</tbody>
-       </table>
-       <div class="print-section" style="margin-top:22px">
-         <div class="print-field"><strong>Customer approval / remarks:</strong></div>
-         <div class="print-field" style="min-height:48px"></div>
-         <div style="display:flex;justify-content:space-between;margin-top:28px"><span>Customer signature: ____________________</span><span>Measured by: ____________________</span></div>
-       </div>`);
+    prepareMeasurementPrint(measurementFormMarkup(a));
   }
 
-  $('rememberSignIn').onclick=async()=>{
-    const {data:{session},error}=await supabase.auth.getSession();
-    if(error||!session){showLogin();return;}
-    $('rememberScreen').style.display='none';
-    showApp(session.user);
-  };
-  $('useDifferentAccount').onclick=async()=>{
-    await supabase.auth.signOut();
-    localStorage.removeItem('smartScheduleRememberedName');
-    showLogin();
+  $('adminChoice').onclick=()=>chooseLogin('admin');
+  $('employeeChoice').onclick=()=>chooseLogin('employee');
+  $('backToChoices').onclick=()=>{
+    $('authScreen').style.display='none';
+    $('choiceScreen').style.display='grid';
+    $('authMessage').className='auth-message';
+    $('authPin').value='';
+    $('adminPassword').value='';
   };
 
   $('authForm').addEventListener('submit',async e=>{
     e.preventDefault();
-    if(!configured){showAuthMessage("Supabase is not configured in this HTML file.");return;}
-    const username=$('authUsername').value.trim().toLowerCase();
-    const pin=$('authPin').value;
-    if(!/^[a-z0-9._-]{3,30}$/.test(username)){showAuthMessage("Enter a valid username (3-30 letters, numbers, dots, underscores or hyphens).");return;}
-    if(!/^\d{6}$/.test(pin)){showAuthMessage("PIN must contain exactly 6 digits.");return;}
+    if(!configured){showAuthMessage('Supabase is not configured in this HTML file.');return;}
     $('authSubmit').disabled=true;
     $('authSubmit').textContent='Checking…';
     try{
-      const {data:loginData,error:loginError}=await supabase.functions.invoke('employee-pin-login',{
-        body:{username:username,pin:pin}
-      });
-      if(loginError)throw loginError;
-      if(!loginData || !loginData.success || !loginData.token_hash){
-        throw new Error(loginData?.error || "Login failed.");
+      if(authMode==='admin'){
+        const email=$('adminEmail').value.trim();
+        const password=$('adminPassword').value;
+        if(!email || !password)throw new Error('Enter your administrator email and password.');
+        const {data,error}=await supabase.auth.signInWithPassword({email,password});
+        if(error)throw error;
+        if(!data.user || !data.session)throw new Error('Supabase did not return a valid login session.');
+        if(!isAdmin(data.user)){
+          await supabase.auth.signOut();
+          throw new Error('This account is not marked as an administrator. Ask the system administrator to assign the admin role securely.');
+        }
+        savedSession=data.session;
+        $('adminPassword').value='';
+        showApp(data.user);
+      } else {
+        const username=$('authUsername').value.trim().toLowerCase();
+        const pin=$('authPin').value;
+        if(!/^[a-z0-9._-]{3,30}$/.test(username))throw new Error('Enter a valid username (3-30 letters, numbers, dots, underscores or hyphens).');
+        if(!/^\d{6}$/.test(pin))throw new Error('PIN must contain exactly 6 digits.');
+        const {data:loginData,error:loginError}=await supabase.functions.invoke('employee-pin-login',{body:{username:username,pin:pin}});
+        if(loginError)throw loginError;
+        if(!loginData || !loginData.success || !loginData.token_hash)throw new Error(loginData?.error || 'Login failed.');
+        const {data:verifyData,error:verifyError}=await supabase.auth.verifyOtp({type:'magiclink',token_hash:loginData.token_hash});
+        if(verifyError)throw verifyError;
+        if(!verifyData.session || !verifyData.user)throw new Error('Supabase did not return a valid login session.');
+        savedSession=verifyData.session;
+        localStorage.setItem('smartScheduleRememberedName',loginData.username);
+        $('authPin').value='';
+        showApp(verifyData.user);
       }
-      const {data:verifyData,error:verifyError}=await supabase.auth.verifyOtp({
-        type:'magiclink',
-        token_hash:loginData.token_hash
-      });
-      if(verifyError)throw verifyError;
-      if(!verifyData.session || !verifyData.user){
-        throw new Error("Supabase did not return a valid login session.");
-      }
-      localStorage.setItem('smartScheduleRememberedName',loginData.username);
-      $('authPin').value='';
-      showApp(verifyData.user);
     }catch(err){
-      showAuthMessage(err.message || "Login failed. Check your username and PIN.");
+      showAuthMessage(err.message || (authMode==='admin'?'Admin sign in failed.':'Login failed. Check your username and PIN.'));
     }finally{
       $('authSubmit').disabled=false;
       $('authSubmit').textContent='Sign in';
     }
+  });
+
+  $('createEmployeeForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const message=$('employeeAdminMessage');
+    if(!currentUser || !isAdmin(currentUser)){
+      message.textContent='Administrator access is required.';
+      message.className='employee-admin-message error';return;
+    }
+    const display_name=$('newEmployeeName').value.trim();
+    const username=$('newEmployeeUsername').value.trim().toLowerCase();
+    const pin=$('newEmployeePin').value;
+    if(!display_name){message.textContent='Enter the colleague name.';message.className='employee-admin-message error';return;}
+    if(!/^[a-z0-9._-]{3,30}$/.test(username)){message.textContent='Username must be 3–30 characters: letters, numbers, dots, underscores or hyphens.';message.className='employee-admin-message error';return;}
+    if(!/^\d{6}$/.test(pin)){message.textContent='PIN must contain exactly 6 digits.';message.className='employee-admin-message error';return;}
+    const button=$('createEmployeeBtn');button.disabled=true;button.textContent='Creating…';
+    message.textContent='Creating colleague account securely…';message.className='employee-admin-message';
+    try{
+      // Server endpoint must verify the signed-in admin JWT and use service-role access server-side.
+      const {data,error}=await supabase.functions.invoke('admin-create-employee',{body:{display_name,username,pin}});
+      if(error)throw error;
+      if(!data || data.success!==true)throw new Error(data?.error || 'The server did not confirm account creation.');
+      message.textContent=`Colleague account created: ${display_name} (username: ${username}). Share the username and PIN privately.`;
+      message.className='employee-admin-message success';$('createEmployeeForm').reset();
+    }catch(err){
+      console.error('Smart Schedule admin-create-employee error:', err);
+      let detail = err?.message || 'Could not create colleague account.';
+      // Supabase FunctionsHttpError stores the HTTP response in err.context.
+      // Read it so the page shows the real server response, not just a generic message.
+      if (err?.context) {
+        try {
+          const response = err.context;
+          const responseText = typeof response.clone === 'function'
+            ? await response.clone().text()
+            : '';
+          if (responseText) detail += `\nServer response: ${responseText}`;
+          if (response.status) detail += `\nHTTP status: ${response.status}`;
+        } catch (readError) {
+          console.warn('Could not read Edge Function response:', readError);
+        }
+      }
+      message.textContent = `Could not create account: ${detail}`;
+      message.className='employee-admin-message error';
+    }finally{button.disabled=false;button.textContent='＋ Create colleague';}
   });
 
   $('signOutBtn').onclick=async()=>{
@@ -547,14 +695,15 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     if(error)toast(error.message);else {localStorage.removeItem('smartScheduleRememberedName');showLogin();}
   };
 
-  $('prevMonth').onclick=()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()-1,1);render();};
+    $('prevMonth').onclick=()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()-1,1);render();};
   $('nextMonth').onclick=()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()+1,1);render();};
   $('todayBtn').onclick=()=>{const now=new Date();shownMonth=new Date(now.getFullYear(),now.getMonth(),1);selectedDate=iso(now);render();};
-  $('printMonthBtn').onclick=printMonth;
   $('printDayBtn').onclick=printDay;
   $('appointmentList').addEventListener('click',e=>{
-    const button=e.target.closest('[data-print-appt]');
-    if(button)printMeasurementForm(button.getAttribute('data-print-appt'));
+    const editButton=e.target.closest('[data-edit-appt]');
+    if(editButton){openModal(editButton.getAttribute('data-edit-appt'));return;}
+    const printButton=e.target.closest('[data-print-appt]');
+    if(printButton)printMeasurementForm(printButton.getAttribute('data-print-appt'));
   });
   $('topAdd').onclick=$('sideAdd').onclick=openModal;
   $('closeModal').onclick=$('cancelModal').onclick=closeModal;
@@ -576,36 +725,37 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       appointment_status:$('status').value,
       notes:$('notes').value.trim()||null,
       is_archived:false,
-      created_by:currentUser.id,
       updated_by:currentUser.id
     };
     if(!payload.client_name||!payload.appointment_date)return;
     const saveButton=$('appointmentForm').querySelector('button[type="submit"]');
-    saveButton.disabled=true;saveButton.textContent='Saving…';
-    const {error}=await supabase.from('appointments').insert(payload);
-    saveButton.disabled=false;saveButton.textContent='Save appointment';
-    if(error){toast(`Could not save: ${error.message}`);return;}
+    const wasEditing=Boolean(editingAppointmentId);
+    saveButton.disabled=true;saveButton.textContent=wasEditing?'Updating…':'Saving…';
+    let result;
+    if(wasEditing){
+      result=await supabase.from('appointments').update(payload).eq('id',editingAppointmentId);
+    }else{
+      result=await supabase.from('appointments').insert({...payload,created_by:currentUser.id});
+    }
+    saveButton.disabled=false;saveButton.textContent=wasEditing?'Update appointment':'Save appointment';
+    if(result.error){toast(`Could not save: ${result.error.message}`);return;}
+    editingAppointmentId=null;
     selectedDate=payload.appointment_date;
     const d=new Date(payload.appointment_date+'T12:00:00');shownMonth=new Date(d.getFullYear(),d.getMonth(),1);
-    closeModal();await loadAppointments();toast('Appointment saved online.');
+    closeModal();await loadAppointments();toast(wasEditing?'Appointment updated online.':'Appointment saved online.');
   });
 
   async function init(){
     if(!configured){$('configWarning').style.display='block';$('authSubmit').disabled=true;return;}
-    if(!window.supabase){showAuthMessage("Supabase library could not load. Check your internet connection.");return;}
+    if(!window.supabase){showAuthMessage('Supabase library could not load. Check your internet connection.');return;}
     supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
-      auth:{
-        persistSession:true,
-        autoRefreshToken:true,
-        detectSessionInUrl:true
-      }
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
     });
     const {data:{session},error:sessionError}=await supabase.auth.getSession();
-    if(sessionError){showAuthMessage("Could not restore saved login. Please sign in again.");}
-    else if(session)showApp(session.user);
+    if(sessionError){showAuthMessage('Could not restore saved login. Please sign in again.');}
+    else if(session){savedSession=session;$('choiceScreen').style.display='grid';}
     supabase.auth.onAuthStateChange((event,session)=>{
-      if(event==='SIGNED_IN' && session && !currentUser)showApp(session.user);
-      else if(event==='SIGNED_OUT' && currentUser)showLogin();
+      if(event==='SIGNED_OUT' && currentUser)showLogin();
     });
   }
   init();
