@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Schedule — Appointment Calendar</title>
+<style>
+:root{
+  --bg:#f5f7fb;--surface:#fff;--ink:#172033;--muted:#778197;--line:#e8ecf3;
+  --primary:#4f6bed;--primary-soft:#eef1ff;--green:#15966a;--amber:#c78318;
+  --red:#d34e5b;--purple:#8064c8;--shadow:0 12px 36px rgba(25,39,74,.07);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{max-width:1440px;margin:auto;padding:28px 30px 40px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#6b80f5,#435bd7);display:grid;place-items:center;color:white;font-size:21px;font-weight:800;box-shadow:0 7px 18px #5268dc3b}
+.brand h1{font-size:18px;margin:0;letter-spacing:-.4px}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.top-actions{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:9px;padding:7px 11px;border:1px solid var(--line);border-radius:30px;background:#fff;color:#536078;font-size:12px}
+.avatar{width:25px;height:25px;border-radius:50%;background:#e9edff;color:#4f61cf;display:grid;place-items:center;font-weight:700}
+.btn{border:1px solid var(--line);background:white;color:#344057;padding:10px 14px;border-radius:10px;font-weight:600;transition:.15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px #17203312}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:white;box-shadow:0 5px 14px #4f6bed35}
+.btn.primary:hover{background:#405bdc}
+.btn.icon{padding:9px 12px;font-size:17px;line-height:1}
+.heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:0 0 20px}
+.heading h2{font-size:25px;letter-spacing:-.8px;margin:0}
+.heading p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.stats{display:flex;gap:10px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-width:112px}
+.stat span{display:block;color:var(--muted);font-size:11px}
+.stat strong{font-size:19px;letter-spacing:-.5px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.calendar-panel{padding:20px}
+.cal-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.month-nav{display:flex;align-items:center;gap:9px}
+.month-nav h3{font-size:18px;letter-spacing:-.4px;margin:0;min-width:170px}
+.nav-buttons{display:flex;gap:5px}
+.nav-buttons .btn{padding:7px 10px}
+.toolbar-right{display:flex;align-items:center;gap:8px}
+.today{font-size:12px;padding:8px 11px}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line);border-radius:10px;overflow:hidden}
+.weekday{padding:11px 5px;text-align:center;background:#fafbfe;color:#8a93a6;font-size:10px;font-weight:750;letter-spacing:.7px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.day{min-height:112px;padding:9px 8px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;text-align:left;position:relative;transition:background .12s;display:flex;flex-direction:column;align-items:stretch;gap:8px;color:var(--ink)}
+.day:hover{background:#fafbff}
+.day.other{background:#fcfcfe;color:#b8bfcc}
+.day.selected{background:#f2f4ff;box-shadow:inset 0 0 0 2px #7184f4}
+.day.today .date-num{background:var(--primary);color:#fff}
+.day-head{display:flex;justify-content:space-between;align-items:center}
+.date-num{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:650}
+.count{font-size:10px;color:#4e61d4;background:#edf0ff;border-radius:20px;padding:3px 6px;font-weight:700;white-space:nowrap}
+.day-events{display:flex;flex-direction:column;gap:4px}
+.event-mini{font-size:10px;padding:4px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#edf1ff;color:#5265cb;border-left:2px solid #7184ef}
+.event-mini.completed{background:#e9f7f1;color:#16835f;border-color:#36ad82}
+.event-mini.cancelled{background:#fff0f0;color:#c34c57;border-color:#db6972}
+.event-mini.rescheduled{background:#f4efff;color:#795bc0;border-color:#9679d7}
+.more{font-size:10px;color:var(--muted);padding-left:5px}
+.side{padding:18px;position:sticky;top:18px}
+.side-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:15px}
+.side-head h3{font-size:16px;margin:0;letter-spacing:-.3px}
+.side-head p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.day-total{background:var(--primary-soft);color:#4f63d6;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:700;white-space:nowrap}
+.appointment-list{display:flex;flex-direction:column;gap:9px}
+.appt{border:1px solid var(--line);border-radius:11px;padding:11px}
+.appt-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.appt-time{font-size:11px;color:#68748b;font-weight:700}
+.status{font-size:9px;font-weight:750;padding:4px 7px;border-radius:20px;background:#fff5e6;color:#ad7418}
+.status.Completed{background:#e9f7f1;color:#16835f}
+.status.Cancelled{background:#fff0f0;color:#c34c57}
+.status.Rescheduled{background:#f4efff;color:#795bc0}
+.appt h4{font-size:13px;margin:8px 0 3px}
+.appt p{font-size:11px;color:var(--muted);margin:0}
+.appt-meta{display:flex;gap:10px;margin-top:8px;color:#818ba0;font-size:10px}
+.empty{border:1px dashed #dce2ed;border-radius:12px;padding:25px 14px;text-align:center;color:var(--muted)}
+.empty .empty-icon{font-size:25px;margin-bottom:8px}
+.empty strong{display:block;color:#566177;font-size:12px;margin-bottom:3px}
+.empty span{font-size:11px}
+.side-add{width:100%;margin-top:13px}
+.note{margin-top:16px;padding:11px 12px;background:#f8f9fc;border-radius:10px;color:#778197;font-size:10px;line-height:1.5}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:15px;color:#7b8599;font-size:10px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:#d6a24d}
+.dot.green{background:#36ad82}.dot.red{background:#db6972}.dot.purple{background:#9679d7}
+.modal-backdrop{display:none;position:fixed;inset:0;background:#17203370;z-index:10;align-items:center;justify-content:center;padding:18px}
+.modal-backdrop.open{display:flex}
+.modal{background:#fff;border-radius:17px;width:min(570px,100%);max-height:92vh;overflow:auto;box-shadow:0 24px 70px #101a3540}
+.modal-head{padding:19px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{margin:0;font-size:17px}
+.close{border:0;background:#f2f4f8;border-radius:8px;width:30px;height:30px;font-size:18px;color:#68748b}
+form{padding:20px 22px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;font-weight:700;color:#58647a}
+.field input,.field select,.field textarea{width:100%;border:1px solid #dfe4ed;border-radius:9px;padding:10px 11px;color:#253047;background:#fff;outline:none;font-size:12px}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#8292f2;box-shadow:0 0 0 3px #7184f41a}
+.field textarea{min-height:65px;resize:vertical}
+.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,20px);background:#1f2b43;color:#fff;padding:11px 16px;border-radius:10px;font-size:12px;opacity:0;transition:.2s;pointer-events:none;z-index:20}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}.side{position:static}.day{min-height:90px}}
+@media(max-width:650px){
+ .app{padding:17px 12px 28px}.topbar{align-items:flex-start}.user-chip{display:none}
+ .heading{align-items:flex-start;flex-direction:column}.stats{width:100%}.stat{flex:1;min-width:0}
+ .calendar-panel{padding:10px}.cal-toolbar{align-items:flex-start;flex-direction:column}.toolbar-right{width:100%;justify-content:space-between}
+ .month-nav h3{min-width:145px;font-size:16px}.weekday{font-size:9px;padding:9px 1px}
+ .day{min-height:73px;padding:5px 3px;gap:4px}.date-num{width:23px;height:23px;font-size:10px}.count{font-size:8px;padding:2px 4px}
+ .event-mini{font-size:8px;padding:3px 4px}.day-events{gap:2px}.more{font-size:8px}
+ .form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}
+}
+
+.auth-wrap{min-height:100vh;display:grid;place-items:center;padding:22px}
+.auth-card{width:min(420px,100%);background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:var(--shadow)}
+.auth-card h2{margin:0 0 6px;font-size:22px;letter-spacing:-.5px}
+.auth-card>p{margin:0 0 20px;color:var(--muted);font-size:12px}
+.auth-card .field{margin-bottom:13px}
+.auth-message{font-size:12px;margin:12px 0 0;padding:10px;border-radius:9px;display:none;white-space:pre-wrap}
+.auth-message.error{display:block;background:#fff0f0;color:#b83d4b}
+.auth-message.success{display:block;background:#e9f7f1;color:#167a59}
+.auth-links{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:11px}
+.text-btn{border:0;background:none;color:var(--primary);font-weight:700;padding:4px}
+.config-warning{background:#fff8e8;border:1px solid #f0d9a7;color:#805b18;padding:11px;border-radius:10px;font-size:11px;line-height:1.5;margin-bottom:15px}
+#appRoot{display:none}
+
+
+#printArea{display:none}
+.print-action{margin-top:9px;font-size:10px;padding:6px 9px}
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+  body{background:#fff!important;color:#111!important}
+  body.printing>*:not(#printArea){display:none!important}
+  body.printing #printArea{display:block!important}
+  #printArea{font:11px/1.45 Arial,sans-serif;color:#111}
+  #printArea h1{font-size:21px;margin:0 0 4px}
+  #printArea h2{font-size:16px;margin:18px 0 8px}
+  #printArea .print-sub{color:#555;margin-bottom:16px}
+  #printArea .print-meta{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #bbb;padding-bottom:9px;margin-bottom:14px}
+  #printArea table{width:100%;border-collapse:collapse;margin-top:10px}
+  #printArea th,#printArea td{border:1px solid #bbb;padding:7px;text-align:left;vertical-align:top}
+  #printArea th{background:#f0f2f5}
+  #printArea .print-section{margin:12px 0}
+  #printArea .print-field{border-bottom:1px solid #bbb;padding:7px 0;min-height:27px}
+  #printArea .measurement-grid{width:100%;border-collapse:collapse;margin-top:12px}
+  #printArea .measurement-grid th,#printArea .measurement-grid td{height:34px}
+  #printArea .muted{color:#555}
+  #printArea .print-footer{margin-top:22px;border-top:1px solid #bbb;padding-top:8px;font-size:9px;color:#555}
+}
+
+</style>
+</head>
+<body>
+<div class="auth-wrap" id="rememberScreen" style="display:none">
+  <section class="auth-card" style="text-align:center">
+    <div class="brand" style="justify-content:center;margin-bottom:22px">
+      <div class="logo">S</div><div style="text-align:left"><h1>Smart Schedule</h1><p>Appointment workspace</p></div>
+    </div>
+    <h2>Welcome back</h2>
+    <p id="rememberedUserLabel">Your account is saved on this browser.</p>
+    <button class="btn primary" id="rememberSignIn" type="button" style="width:100%">Sign in</button>
+    <button class="text-btn" id="useDifferentAccount" type="button" style="margin-top:12px">Use a different account</button>
+  </section>
+</div>
+
+<div class="auth-wrap" id="authScreen">
+  <section class="auth-card">
+    <div class="brand" style="margin-bottom:22px">
+      <div class="logo">S</div>
+      <div><h1>Smart Schedule</h1><p>Secure appointment workspace</p></div>
+    </div>
+    <div class="config-warning" id="configWarning" style="display:none">
+      Supabase connection details are not configured yet. Add your Project URL and anon/publishable key in the configuration section of this HTML file.
+    </div>
+    <h2 id="authTitle">Welcome back</h2>
+    <p id="authSubtitle">Sign in to access your appointment calendar.</p>
+    <form id="authForm">
+      <div class="field"><label for="authUsername">Username</label><input id="authUsername" type="text" required minlength="3" maxlength="30" autocomplete="username" placeholder="Enter your username" autocapitalize="none"></div>
+      <div class="field"><label for="authPin">6-digit PIN</label><input id="authPin" type="password" required inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="current-password" placeholder="Enter your PIN"></div>
+      <button class="btn primary" id="authSubmit" type="submit" style="width:100%">Sign in</button>
+    </form>
+    <div class="auth-message" id="authMessage"></div>
+    <div class="auth-links"><span>Employee access</span><span>Contact your administrator for an account.</span></div>
+  </section>
+</div>
+
+<div id="appRoot">
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">S</div>
+      <div><h1>Smart Schedule</h1><p>Measurement & appointment planner</p></div>
+    </div>
+    <div class="top-actions">
+      <div class="user-chip"><span class="avatar" id="userAvatar">U</span><span id="userEmail">Signed in</span></div>
+      <button class="btn" id="signOutBtn">Sign out</button>
+      <button class="btn primary" id="topAdd">＋ New appointment</button>
+    </div>
+  </header>
+
+  <section class="heading">
+    <div><h2>Appointment calendar</h2><p>Plan, organize and track your measurement appointments.</p></div>
+    <div class="stats">
+      <div class="stat"><span>Appointments this month</span><strong id="monthCount">0</strong></div>
+      <div class="stat"><span>Pending</span><strong id="pendingCount">0</strong></div>
+      <div class="stat"><span>Completed</span><strong id="completedCount">0</strong></div>
+    </div>
+  </section>
+
+  <main class="layout">
+    <section class="panel calendar-panel">
+      <div class="cal-toolbar">
+        <div class="month-nav">
+          <h3 id="monthLabel">November 2026</h3>
+          <div class="nav-buttons">
+            <button class="btn icon" id="prevMonth" aria-label="Previous month">‹</button>
+            <button class="btn icon" id="nextMonth" aria-label="Next month">›</button>
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn today" id="todayBtn">Today</button>
+          <button class="btn" id="viewLabel" disabled>Month view</button>
+          <button class="btn" id="printMonthBtn" type="button">🖨 Print month</button>
+        </div>
+      </div>
+      <div class="calendar" id="calendar"></div>
+      <div class="legend">
+        <span><i class="dot"></i>Pending</span><span><i class="dot green"></i>Completed</span>
+        <span><i class="dot red"></i>Cancelled</span><span><i class="dot purple"></i>Rescheduled</span>
+      </div>
+    </section>
+
+    <aside class="panel side">
+      <div class="side-head">
+        <div><h3 id="selectedLabel">Selected day</h3><p id="selectedSub">Choose a date on the calendar</p></div>
+        <div class="day-total" id="dayTotal">0 total</div>
+      </div>
+      <div class="appointment-list" id="appointmentList">
+        <div class="empty"><div class="empty-icon">▦</div><strong>No appointments yet</strong><span>Select a date or create a new appointment.</span></div>
+      </div>
+      <button class="btn" id="printDayBtn" type="button" style="width:100%;margin-top:10px">🖨 Print selected day</button>
+      <button class="btn primary side-add" id="sideAdd">＋ Add appointment</button>
+      <div class="note">Appointments are stored in your shared Supabase database. Changes are synchronized for signed-in employees.</div>
+    </aside>
+  </main>
+</div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><h3 id="modalTitle">New appointment</h3><button class="close" id="closeModal" aria-label="Close">×</button></div>
+    <form id="appointmentForm">
+      <div class="form-grid">
+        <div class="field"><label for="client">Customer name *</label><input id="client" required placeholder="Enter customer name"></div>
+        <div class="field"><label for="phone">Contact number</label><input id="phone" placeholder="Phone number"></div>
+        <div class="field"><label for="date">Appointment date *</label><input id="date" type="date" required></div>
+        <div class="field"><label for="time">Appointment time</label><input id="time" type="time"></div>
+        <div class="field"><label for="sales">Salesperson</label><input id="sales" placeholder="Salesperson name"></div>
+        <div class="field"><label for="measurer">Measured by</label><input id="measurer" placeholder="Assigned measurer"></div>
+        <div class="field full"><label for="address">Address</label><input id="address" placeholder="Customer location"></div>
+        <div class="field full"><label for="requirements">Requirements</label><input id="requirements" placeholder="e.g. Master bedroom wardrobe"></div>
+        <div class="field"><label for="siteStatus">Site status</label><input id="siteStatus" placeholder="e.g. Ready / Not ready"></div>
+        <div class="field"><label for="status">Appointment status</label><select id="status"><option>Pending</option><option>Completed</option><option>Cancelled</option><option>Rescheduled</option></select></div>
+        <div class="field full"><label for="notes">Notes</label><textarea id="notes" placeholder="Additional details"></textarea></div>
+      </div>
+      <div class="form-actions"><button type="button" class="btn" id="cancelModal">Cancel</button><button class="btn primary" type="submit">Save appointment</button></div>
+    </form>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div id="printArea" aria-hidden="true"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// STEP 1: Replace these two placeholders with values from Supabase:
+// Project Settings -> API (or Data API) -> Project URL and anon/public key.
+// NEVER put your database password or service_role/secret key in this file.
+const SUPABASE_URL = "https://chpoqkmckyomvfdrtpra.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
+
+(() => {
+  const $ = id => document.getElementById(id);
+  const configured = SUPABASE_URL.startsWith("https://") &&
+    !SUPABASE_URL.includes("PASTE_") &&
+    SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("PASTE_");
+  let supabase = null;
+  let currentUser = null;
+  let appointments = [];
+  let shownMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  let selectedDate = iso(new Date());
+  let authMode = "signin";
+  let realtimeChannel = null;
+
+  function iso(d){
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function prettyDate(s, opts={weekday:'long',day:'numeric',month:'long'}){
+    return new Date(s+'T12:00:00').toLocaleDateString(undefined,opts);
+  }
+  function escapeHtml(s){
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function showAuthMessage(message, type="error"){
+    const box=$('authMessage');box.textContent=message;box.className=`auth-message ${type}`;
+  }
+  function showApp(user){
+    currentUser=user;
+    $('authScreen').style.display='none';
+    $('appRoot').style.display='block';
+    const employeeName = user.user_metadata?.display_name || user.user_metadata?.username || user.email || "Employee";
+    $('userEmail').textContent=employeeName;
+    $('userAvatar').textContent=employeeName.charAt(0).toUpperCase();
+    loadAppointments();
+    subscribeToChanges();
+  }
+  function showLogin(){
+    currentUser=null;
+    $('appRoot').style.display='none';
+    $('rememberScreen').style.display='none';
+    $('authScreen').style.display='grid';
+    if(realtimeChannel){supabase.removeChannel(realtimeChannel);realtimeChannel=null;}
+  }
+  function showRememberScreen(user){
+    $('authScreen').style.display='none';
+    $('appRoot').style.display='none';
+    $('rememberScreen').style.display='grid';
+    const savedName=localStorage.getItem('smartScheduleRememberedName') || user.email || 'Saved employee';
+    $('rememberedUserLabel').textContent=savedName+' is saved on this browser.';
+  }
+  async function loadAppointments(){
+    $('appointmentList').innerHTML='<div class="empty"><strong>Loading appointments…</strong><span>Connecting to your shared schedule.</span></div>';
+    const {data,error}=await supabase.from('appointments')
+      .select('*').eq('is_archived',false)
+      .order('appointment_date').order('appointment_time');
+    if(error){
+      $('appointmentList').innerHTML=`<div class="empty"><strong>Could not load appointments</strong><span>${escapeHtml(error.message)}</span></div>`;
+      toast("Database error. Check your Supabase table and permissions.");
+      return;
+    }
+    appointments=(data||[]).map(row=>({
+      id:row.id,client:row.client_name||"",phone:row.contact_no||"",
+      date:row.appointment_date,time:row.appointment_time?String(row.appointment_time).slice(0,5):"",
+      sales:row.sales||"",measurer:row.measured_by||"",address:row.address||"",
+      requirements:row.requirements||"",siteStatus:row.site_status||"",
+      status:row.appointment_status||"Pending",notes:row.notes||""
+    }));
+    render();
+  }
+  function subscribeToChanges(){
+    if(realtimeChannel)supabase.removeChannel(realtimeChannel);
+    realtimeChannel=supabase.channel('appointments-live')
+      .on('postgres_changes',{event:'*',schema:'public',table:'appointments'},()=>loadAppointments())
+      .subscribe();
+  }
+  function monthAppointments(){
+    const y=shownMonth.getFullYear(),m=shownMonth.getMonth();
+    return appointments.filter(a=>{const d=new Date(a.date+'T12:00:00');return d.getFullYear()===y&&d.getMonth()===m;});
+  }
+  function render(){
+    $('monthLabel').textContent=shownMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+    const list=monthAppointments();
+    $('monthCount').textContent=list.length;
+    $('pendingCount').textContent=list.filter(a=>a.status==='Pending').length;
+    $('completedCount').textContent=list.filter(a=>a.status==='Completed').length;
+    const first=new Date(shownMonth.getFullYear(),shownMonth.getMonth(),1);
+    const start=new Date(first);start.setDate(1-first.getDay());
+    const cal=$('calendar');
+    cal.innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="weekday">${d}</div>`).join('');
+    for(let i=0;i<42;i++){
+      const d=new Date(start);d.setDate(start.getDate()+i);
+      const key=iso(d),dayItems=appointments.filter(a=>a.date===key).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      const classes=['day'];
+      if(d.getMonth()!==shownMonth.getMonth())classes.push('other');
+      if(key===selectedDate)classes.push('selected');
+      if(key===iso(new Date()))classes.push('today');
+      const cell=document.createElement('button');cell.type='button';cell.className=classes.join(' ');
+      cell.setAttribute('aria-label',`${prettyDate(key)}: ${dayItems.length} appointments`);
+      const count=dayItems.length?`<span class="count">${dayItems.length} ${dayItems.length===1?'appointment':'appointments'}</span>`:'';
+      const events=dayItems.slice(0,2).map(a=>`<div class="event-mini ${String(a.status).toLowerCase()}" title="${escapeHtml(a.client)}">${escapeHtml(a.time?a.time+' · ':'')}${escapeHtml(a.client)}</div>`).join('');
+      const more=dayItems.length>2?`<div class="more">+${dayItems.length-2} more</div>`:'';
+      cell.innerHTML=`<div class="day-head"><span class="date-num">${d.getDate()}</span>${count}</div><div class="day-events">${events}${more}</div>`;
+      cell.addEventListener('click',()=>{selectedDate=key;if(d.getMonth()!==shownMonth.getMonth())shownMonth=new Date(d.getFullYear(),d.getMonth(),1);render();});
+      cal.appendChild(cell);
+    }
+    renderDay();
+  }
+  function renderDay(){
+    $('selectedLabel').textContent=prettyDate(selectedDate,{weekday:'long',day:'numeric',month:'long'});
+    $('selectedSub').textContent='Appointments scheduled for this date';
+    const items=appointments.filter(a=>a.date===selectedDate).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    $('dayTotal').textContent=`${items.length} ${items.length===1?'appointment':'total'}`;
+    const target=$('appointmentList');
+    if(!items.length){
+      target.innerHTML='<div class="empty"><div class="empty-icon">▦</div><strong>No appointments yet</strong><span>This date is clear. Add an appointment when needed.</span></div>';
+      return;
+    }
+    target.innerHTML=items.map(a=>`<article class="appt">
+      <div class="appt-top"><span class="appt-time">${escapeHtml(a.time||'Time not set')}</span><span class="status ${escapeHtml(a.status)}">${escapeHtml(a.status)}</span></div>
+      <h4>${escapeHtml(a.client)}</h4><p>${escapeHtml(a.requirements||'No requirements added')}</p>
+      <div class="appt-meta"><span>${escapeHtml(a.sales||'No salesperson')}</span><span>${escapeHtml(a.measurer||'No measurer')}</span></div>
+      ${a.phone?`<div class="appt-meta">${escapeHtml(a.phone)}</div>`:''}
+      <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print measurement form</button>
+    </article>`).join('');
+  }
+  function openModal(){
+    $('appointmentForm').reset();$('date').value=selectedDate;$('status').value='Pending';
+    $('modalBackdrop').classList.add('open');$('client').focus();
+  }
+  function closeModal(){$('modalBackdrop').classList.remove('open');}
+  function toast(msg){
+    const t=$('toast');t.textContent=msg;t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2800);
+  }
+
+  function printShell(title, subtitle, content){
+    const area=$('printArea');
+    area.innerHTML=`
+      <h1>Smart Schedule</h1>
+      <div class="print-sub">${escapeHtml(title)}${subtitle?` · ${escapeHtml(subtitle)}`:''}</div>
+      <div class="print-meta"><span>Appointment workspace</span><span>Printed: ${new Date().toLocaleString()}</span></div>
+      ${content}
+      <div class="print-footer">Smart Schedule · Keep this document with the relevant customer/job record.</div>`;
+    document.body.classList.add('printing');
+    window.addEventListener('afterprint',function cleanup(){
+      document.body.classList.remove('printing');
+      area.innerHTML='';
+      window.removeEventListener('afterprint',cleanup);
+    });
+    window.print();
+  }
+
+  function printMonth(){
+    const items=monthAppointments().slice().sort((a,b)=>
+      (a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||'')));
+    const rows=items.map(a=>`<tr>
+      <td>${escapeHtml(prettyDate(a.date,{day:'numeric',month:'short',year:'numeric'}))}</td>
+      <td>${escapeHtml(a.time||'—')}</td>
+      <td>${escapeHtml(a.client)}</td>
+      <td>${escapeHtml(a.phone||'—')}</td>
+      <td>${escapeHtml(a.requirements||'—')}</td>
+      <td>${escapeHtml(a.sales||'—')}</td>
+      <td>${escapeHtml(a.status)}</td>
+    </tr>`).join('');
+    printShell('Monthly appointment schedule',shownMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'}),
+      `<p><strong>Total appointments:</strong> ${items.length}</p>
+       <table><thead><tr><th>Date</th><th>Time</th><th>Customer</th><th>Contact</th><th>Requirements</th><th>Salesperson</th><th>Status</th></tr></thead>
+       <tbody>${rows||'<tr><td colspan="7">No appointments for this month.</td></tr>'}</tbody></table>`);
+  }
+
+  function printDay(){
+    const items=appointments.filter(a=>a.date===selectedDate).slice()
+      .sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    const rows=items.map(a=>`<tr>
+      <td>${escapeHtml(a.time||'—')}</td><td>${escapeHtml(a.client)}</td>
+      <td>${escapeHtml(a.phone||'—')}</td><td>${escapeHtml(a.requirements||'—')}</td>
+      <td>${escapeHtml(a.sales||'—')}</td><td>${escapeHtml(a.measurer||'—')}</td>
+      <td>${escapeHtml(a.status)}</td>
+    </tr>`).join('');
+    printShell('Daily appointment schedule',prettyDate(selectedDate),
+      `<p><strong>Total appointments:</strong> ${items.length}</p>
+       <table><thead><tr><th>Time</th><th>Customer</th><th>Contact</th><th>Requirements</th><th>Salesperson</th><th>Measured by</th><th>Status</th></tr></thead>
+       <tbody>${rows||'<tr><td colspan="7">No appointments scheduled for this date.</td></tr>'}</tbody></table>`);
+  }
+
+  function printMeasurementForm(id){
+    const a=appointments.find(item=>String(item.id)===String(id));
+    if(!a){toast('Appointment not found.');return;}
+    const field=(label,value)=>`<div class="print-field"><strong>${label}:</strong> ${escapeHtml(value||'')}</div>`;
+    printShell('Customer measurement sheet',a.client,
+      `<div class="print-section">
+        ${field('Appointment date',prettyDate(a.date,{day:'numeric',month:'long',year:'numeric'}))}
+        ${field('Time',a.time||'Not specified')}
+        ${field('Contact number',a.phone)}
+        ${field('Address',a.address)}
+        ${field('Requirements',a.requirements)}
+        ${field('Salesperson',a.sales)}
+        ${field('Measured by',a.measurer)}
+        ${field('Site status',a.siteStatus)}
+        ${field('Appointment status',a.status)}
+        ${field('Notes',a.notes)}
+       </div>
+       <h2>Room / wardrobe measurements</h2>
+       <table class="measurement-grid">
+         <thead><tr><th>Room / wall / item</th><th>Width</th><th>Height</th><th>Depth</th><th>Notes</th></tr></thead>
+         <tbody>${Array.from({length:7},()=>'<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('')}</tbody>
+       </table>
+       <div class="print-section" style="margin-top:22px">
+         <div class="print-field"><strong>Customer approval / remarks:</strong></div>
+         <div class="print-field" style="min-height:48px"></div>
+         <div style="display:flex;justify-content:space-between;margin-top:28px"><span>Customer signature: ____________________</span><span>Measured by: ____________________</span></div>
+       </div>`);
+  }
+
+  $('rememberSignIn').onclick=async()=>{
+    const {data:{session},error}=await supabase.auth.getSession();
+    if(error||!session){showLogin();return;}
+    $('rememberScreen').style.display='none';
+    showApp(session.user);
+  };
+  $('useDifferentAccount').onclick=async()=>{
+    await supabase.auth.signOut();
+    localStorage.removeItem('smartScheduleRememberedName');
+    showLogin();
+  };
+
+  $('authForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    if(!configured){showAuthMessage("Supabase is not configured in this HTML file.");return;}
+    const username=$('authUsername').value.trim().toLowerCase();
+    const pin=$('authPin').value;
+    if(!/^[a-z0-9._-]{3,30}$/.test(username)){showAuthMessage("Enter a valid username (3-30 letters, numbers, dots, underscores or hyphens).");return;}
+    if(!/^\d{6}$/.test(pin)){showAuthMessage("PIN must contain exactly 6 digits.");return;}
+    $('authSubmit').disabled=true;
+    $('authSubmit').textContent='Checking…';
+    try{
+      const {data:loginData,error:loginError}=await supabase.functions.invoke('employee-pin-login',{
+        body:{username:username,pin:pin}
+      });
+      if(loginError)throw loginError;
+      if(!loginData || !loginData.success || !loginData.token_hash){
+        throw new Error(loginData?.error || "Login failed.");
+      }
+      const {data:verifyData,error:verifyError}=await supabase.auth.verifyOtp({
+        type:'magiclink',
+        token_hash:loginData.token_hash
+      });
+      if(verifyError)throw verifyError;
+      if(!verifyData.session || !verifyData.user){
+        throw new Error("Supabase did not return a valid login session.");
+      }
+      localStorage.setItem('smartScheduleRememberedName',loginData.username);
+      $('authPin').value='';
+      showApp(verifyData.user);
+    }catch(err){
+      showAuthMessage(err.message || "Login failed. Check your username and PIN.");
+    }finally{
+      $('authSubmit').disabled=false;
+      $('authSubmit').textContent='Sign in';
+    }
+  });
+
+  $('signOutBtn').onclick=async()=>{
+    const {error}=await supabase.auth.signOut();
+    if(error)toast(error.message);else {localStorage.removeItem('smartScheduleRememberedName');showLogin();}
+  };
+
+  $('prevMonth').onclick=()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()-1,1);render();};
+  $('nextMonth').onclick=()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()+1,1);render();};
+  $('todayBtn').onclick=()=>{const now=new Date();shownMonth=new Date(now.getFullYear(),now.getMonth(),1);selectedDate=iso(now);render();};
+  $('printMonthBtn').onclick=printMonth;
+  $('printDayBtn').onclick=printDay;
+  $('appointmentList').addEventListener('click',e=>{
+    const button=e.target.closest('[data-print-appt]');
+    if(button)printMeasurementForm(button.getAttribute('data-print-appt'));
+  });
+  $('topAdd').onclick=$('sideAdd').onclick=openModal;
+  $('closeModal').onclick=$('cancelModal').onclick=closeModal;
+  $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+  $('appointmentForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const payload={
+      client_name:$('client').value.trim(),
+      contact_no:$('phone').value.trim()||null,
+      appointment_date:$('date').value,
+      appointment_time:$('time').value||null,
+      sales:$('sales').value.trim()||null,
+      measured_by:$('measurer').value.trim()||null,
+      address:$('address').value.trim()||null,
+      requirements:$('requirements').value.trim()||null,
+      site_status:$('siteStatus').value.trim()||null,
+      appointment_status:$('status').value,
+      notes:$('notes').value.trim()||null,
+      is_archived:false,
+      created_by:currentUser.id,
+      updated_by:currentUser.id
+    };
+    if(!payload.client_name||!payload.appointment_date)return;
+    const saveButton=$('appointmentForm').querySelector('button[type="submit"]');
+    saveButton.disabled=true;saveButton.textContent='Saving…';
+    const {error}=await supabase.from('appointments').insert(payload);
+    saveButton.disabled=false;saveButton.textContent='Save appointment';
+    if(error){toast(`Could not save: ${error.message}`);return;}
+    selectedDate=payload.appointment_date;
+    const d=new Date(payload.appointment_date+'T12:00:00');shownMonth=new Date(d.getFullYear(),d.getMonth(),1);
+    closeModal();await loadAppointments();toast('Appointment saved online.');
+  });
+
+  async function init(){
+    if(!configured){$('configWarning').style.display='block';$('authSubmit').disabled=true;return;}
+    if(!window.supabase){showAuthMessage("Supabase library could not load. Check your internet connection.");return;}
+    supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
+      auth:{
+        persistSession:true,
+        autoRefreshToken:true,
+        detectSessionInUrl:true
+      }
+    });
+    const {data:{session},error:sessionError}=await supabase.auth.getSession();
+    if(sessionError){showAuthMessage("Could not restore saved login. Please sign in again.");}
+    else if(session)showApp(session.user);
+    supabase.auth.onAuthStateChange((event,session)=>{
+      if(event==='SIGNED_IN' && session && !currentUser)showApp(session.user);
+      else if(event==='SIGNED_OUT' && currentUser)showLogin();
+    });
+  }
+  init();
+})();
+</script>
+</body>
+</html>
