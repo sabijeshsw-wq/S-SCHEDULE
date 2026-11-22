@@ -309,6 +309,21 @@ form{padding:20px 22px}
 @media screen {
   .btn.map-link{color:#275db8;background:#eaf1fc;border-color:#ceddf4}
   .btn.map-link:hover{background:#dfeafb;border-color:#b6cbed}
+}
+@media screen {
+  .appt-detail{display:flex;gap:8px;margin-top:7px;color:#526b8e;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+  .appt-detail strong{min-width:72px;color:#294a77;font-size:10px;font-weight:700}
+  .appt-detail span{min-width:0}
+}
+@media screen {
+  .count{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:48px;height:48px;padding:0;border-radius:50%;font-size:20px;line-height:1;font-weight:800;background:#e5effd;border:2px solid #7da2dd;color:#2558a6;box-shadow:0 4px 12px rgba(39,91,171,.12);z-index:1}
+  .day .date-num{position:relative;z-index:2}
+}
+@media screen and (max-width:650px) {
+  .count{width:35px;height:35px;font-size:15px}
+}
+@media screen {
+  .btn:disabled{cursor:not-allowed;opacity:.48;transform:none;box-shadow:none}
 }</style>
 </head>
 <body>
@@ -548,6 +563,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       if(mode==='employee' && !isAdmin(user) && (user.user_metadata?.username || user.user_metadata?.display_name)) { showApp(user); return; }
     }
   }
+  function currentDisplayName(){
+    return currentUser?.user_metadata?.display_name || currentUser?.user_metadata?.username || currentUser?.email?.split('@')[0] || 'Employee';
+  }
+
   function isAdmin(user){
     const role=user?.app_metadata?.role;
     return user?.app_metadata?.is_admin===true || String(role||'').toLowerCase()==='admin';
@@ -606,7 +625,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       if(key===todayKey)classes.push('today');
       const cell=document.createElement('button');cell.type='button';cell.className=classes.join(' ');
       cell.setAttribute('aria-label',`${prettyDate(key)}: ${dayItems.length} appointments`);
-      const count=dayItems.length?`<span class="count">${dayItems.length} ${dayItems.length===1?'appointment':'appointments'}</span>`:'';
+      const count=dayItems.length?`<span class="count">${dayItems.length}</span>`:'';
       cell.innerHTML=`<div class="day-head"><span class="date-num">${d.getDate()}</span>${count}</div>`;
       cell.addEventListener('click',()=>{selectedDate=key;if(d.getMonth()!==shownMonth.getMonth())shownMonth=new Date(d.getFullYear(),d.getMonth(),1);render();});
       cal.appendChild(cell);
@@ -615,21 +634,27 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
   }
   function renderDay(){
     $('selectedLabel').textContent=prettyDate(selectedDate,{weekday:'long',day:'numeric',month:'long'});
-    $('selectedSub').textContent='Appointments scheduled for this date';
+    const todayKey=iso(new Date());
+    const isPastDate=selectedDate<todayKey;
+    $('selectedSub').textContent=isPastDate?'Past appointment log — read only':'Appointments scheduled for this date';
+    $('sideAdd').disabled=isPastDate;
+    $('sideAdd').textContent=isPastDate?'Past dates are read-only':'＋ Add appointment';
+    $('sideAdd').title=isPastDate?'Past dates are read-only':'Add appointment';
     const items=appointments.filter(a=>a.date===selectedDate).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     $('dayTotal').textContent=`${items.length} ${items.length===1?'appointment':'total'}`;
     const target=$('appointmentList');
     if(!items.length){
-      target.innerHTML='<div class="empty"><div class="empty-icon">▦</div><strong>No appointments yet</strong><span>This date is clear. Add an appointment when needed.</span></div>';
+      target.innerHTML=isPastDate?'<div class="empty"><div class="empty-icon">▦</div><strong>Past appointment log</strong><span>No appointments were recorded for this date.</span></div>':'<div class="empty"><div class="empty-icon">▦</div><strong>No appointments yet</strong><span>This date is clear. Add an appointment when needed.</span></div>';
       return;
     }
     target.innerHTML=items.map(a=>`<article class="appt">
       <div class="appt-top"><span class="appt-time">${escapeHtml(a.time||'Time not set')}</span><span class="status ${escapeHtml(a.status)}">${escapeHtml(a.status)}</span></div>
-      <h4>${escapeHtml(a.client)}</h4><p>${escapeHtml(a.requirements||'No requirements added')}</p>
-      <div class="appt-meta"><span>${escapeHtml(a.sales||'No salesperson')}</span><span>${escapeHtml(a.measurer||'No measurer')}</span></div>
-      ${a.phone?`<div class="appt-meta">${escapeHtml(a.phone)}</div>`:''}
+      <h4>Client name: ${escapeHtml(a.client)}</h4>
+      <div class="appt-detail"><strong>Mobile</strong><span>${escapeHtml(a.phone||'Not provided')}</span></div>
+      <div class="appt-detail"><strong>Address</strong><span>${escapeHtml(a.address||'Not provided')}</span></div>
+      <div class="appt-detail"><strong>Salesperson</strong><span>${escapeHtml(a.sales||'Not assigned')}</span></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px">
-        ${isAdmin(currentUser)||String(a.createdBy)===String(currentUser?.id)?`<button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button><button type="button" class="btn print-action danger" data-delete-appt="${escapeHtml(a.id)}">Delete</button>`:''}
+        ${a.date>=todayKey&&(isAdmin(currentUser)||String(a.createdBy)===String(currentUser?.id))?`<button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button><button type="button" class="btn print-action danger" data-delete-appt="${escapeHtml(a.id)}">Delete</button>`:''}
         <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print measurement form</button>
         <button type="button" class="btn print-action whatsapp" data-whatsapp-appt="${escapeHtml(a.id)}">WhatsApp</button>
         <button type="button" class="btn print-action map-link" data-map-appt="${escapeHtml(a.id)}">Map</button>
@@ -638,17 +663,21 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     </article>`).join('');
   }
   function openModal(id=null){
+    const todayKey=iso(new Date());
+    if(id===null&&selectedDate<todayKey){toast('Appointments can only be scheduled today or later.');return;}
     $('appointmentForm').reset();
+    $('date').min=todayKey;
     editingAppointmentId=id===null?null:String(id);
     const saveButton=$('appointmentForm').querySelector('button[type="submit"]');
     if(editingAppointmentId){
       const a=appointments.find(item=>String(item.id)===editingAppointmentId);
       if(!a){editingAppointmentId=null;toast('Appointment not found.');return;}
+      if(a.date<todayKey){editingAppointmentId=null;toast('Past appointments are read-only.');return;}
       $('modalTitle').textContent='Edit appointment';
       saveButton.textContent='Update appointment';
       $('client').value=a.client||'';$('phone').value=a.phone||'';
       $('date').value=a.date||selectedDate;$('time').value=a.time||'';
-      $('sales').value=a.sales||'';$('measurer').value=a.measurer||'';
+      $('sales').value=a.sales||currentDisplayName();$('measurer').value=a.measurer||'';
       $('address').value=a.address||'';$('mapLocation').value=a.mapLocation||'';$('requirements').value=a.requirements||'';
       $('siteStatus').value=a.siteStatus||'';$('status').value=a.status||'Pending';
       $('notes').value=a.notes||'';
@@ -656,6 +685,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       $('modalTitle').textContent='New appointment';
       saveButton.textContent='Save appointment';
       $('date').value=selectedDate;$('status').value='Confirmed';
+      $('sales').value=currentDisplayName();
     }
     $('modalBackdrop').classList.add('open');$('client').focus();
   }
@@ -673,7 +703,20 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     if(phone.length===9&&phone.startsWith('0'))phone=phone.slice(1);
     if(phone.length===8)phone='965'+phone;
     if(!phone.startsWith('965')||phone.length!==11){toast('Enter a valid 8-digit Kuwait number or include country code 965.');return;}
-    window.open(`https://wa.me/${phone}`,'_blank','noopener,noreferrer');
+    const appUrl=`whatsapp://send?phone=${phone}`;
+    const webUrl=`https://wa.me/${phone}`;
+    let appOpened=false;
+    let fallbackTimer;
+    const stopFallback=()=>{appOpened=true;if(fallbackTimer)clearTimeout(fallbackTimer);};
+    const onVisibilityChange=()=>{if(document.hidden)stopFallback();};
+    window.addEventListener('blur',stopFallback,{once:true});
+    document.addEventListener('visibilitychange',onVisibilityChange);
+    window.location.href=appUrl;
+    fallbackTimer=setTimeout(()=>{
+      window.removeEventListener('blur',stopFallback);
+      document.removeEventListener('visibilitychange',onVisibilityChange);
+      if(!appOpened&&!document.hidden)window.location.href=webUrl;
+    },1400);
   }
 
   function openMapLocation(id){
@@ -905,7 +948,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       contact_no:$('phone').value.trim()||null,
       appointment_date:$('date').value,
       appointment_time:$('time').value||null,
-      sales:$('sales').value.trim()||null,
+      sales:$('sales').value.trim()||currentDisplayName(),
       measured_by:$('measurer').value.trim()||null,
       address:$('address').value.trim()||null,
       map_location:$('mapLocation').value.trim()||null,
@@ -916,6 +959,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       is_archived:false,
       updated_by:currentUser.id
     };
+    if(payload.appointment_date<iso(new Date())){toast('Appointments can only be scheduled today or later.');return;}
     if(!payload.client_name||!payload.appointment_date)return;
     const saveButton=$('appointmentForm').querySelector('button[type="submit"]');
     const wasEditing=Boolean(editingAppointmentId);
