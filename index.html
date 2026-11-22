@@ -324,7 +324,17 @@ form{padding:20px 22px}
 }
 @media screen {
   .btn:disabled{cursor:not-allowed;opacity:.48;transform:none;box-shadow:none}
-}</style>
+}
+@media screen {
+  .time-entry{display:flex;align-items:stretch;gap:7px}
+  .time-entry input{min-width:0;flex:1}
+  .time-set{padding:8px 13px;color:#275db8;background:#eaf1fc;border-color:#ceddf4}
+  .time-set:hover{background:#dfeafb;border-color:#b6cbed}
+}
+@media screen {
+  .time-set-hint{display:block;color:#7185a1;font-size:10px;line-height:1.35;margin-top:5px}
+}
+</style>
 </head>
 <body>
 <div class="auth-wrap" id="choiceScreen">
@@ -453,7 +463,7 @@ form{padding:20px 22px}
         <div class="field"><label for="client">Customer name *</label><input id="client" required placeholder="Enter customer name"></div>
         <div class="field"><label for="phone">Contact number</label><input id="phone" placeholder="Phone number"></div>
         <div class="field"><label for="date">Appointment date *</label><input id="date" type="date" required></div>
-        <div class="field"><label for="time">Appointment time</label><input id="time" type="time"></div>
+        <div class="field"><label for="time">Appointment time (9:30 AM–4:00 PM)</label><div class="time-entry"><input id="time" type="time" lang="en-US" min="09:30" max="16:00"><button class="btn time-set" id="setTimeBtn" type="button">Set</button></div><small id="timeSetHint" class="time-set-hint">Choose a time, then click Set.</small></div>
         <div class="field"><label for="sales">Salesperson</label><input id="sales" placeholder="Salesperson name"></div>
         <div class="field"><label for="measurer">Measured by</label><input id="measurer" placeholder="Assigned measurer"></div>
         <div class="field full"><label for="address">Address</label><input id="address" placeholder="Customer location"></div>
@@ -498,6 +508,15 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
 
   function iso(d){
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function formatTime12(value){
+    const match=String(value||'').match(/^(\d{1,2}):(\d{2})/);
+    if(!match)return '';
+    const hour24=Number(match[1]);
+    if(hour24<0||hour24>23)return '';
+    const suffix=hour24>=12?'PM':'AM';
+    const hour12=hour24%12||12;
+    return `${hour12}:${match[2]} ${suffix}`;
   }
   function prettyDate(s, opts={weekday:'long',day:'numeric',month:'long'}){
     return new Date(s+'T12:00:00').toLocaleDateString(undefined,opts);
@@ -583,7 +602,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     }
     appointments=(data||[]).map(row=>({
       id:row.id,createdBy:row.created_by||"",client:row.client_name||"",phone:row.contact_no||"",
-      date:row.appointment_date,time:row.appointment_time?String(row.appointment_time).slice(0,5):"",
+      date:row.appointment_date,time:formatTime12(row.appointment_time?String(row.appointment_time).slice(0,5):""),time24:row.appointment_time?String(row.appointment_time).slice(0,5):"",
       sales:row.sales||"",measurer:row.measured_by||"",address:row.address||"",
       requirements:row.requirements||"",mapLocation:row.map_location||"",siteStatus:row.site_status||"",
       status:row.appointment_status||"Pending",notes:row.notes||""
@@ -614,7 +633,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     cal.innerHTML=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'].map(d=>`<div class="weekday">${d}</div>`).join('');
     for(let i=0;i<28;i++){
       const d=new Date(start);d.setDate(start.getDate()+i);
-      const key=iso(d),dayItems=appointments.filter(a=>a.date===key).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      const key=iso(d),dayItems=appointments.filter(a=>a.date===key).sort((a,b)=>(a.time24||'').localeCompare(b.time24||''));
       const classes=['day'];
       const todayKey=iso(new Date());
       if(d.getMonth()!==shownMonth.getMonth())classes.push('other');
@@ -640,7 +659,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     $('sideAdd').disabled=isPastDate;
     $('sideAdd').textContent=isPastDate?'Past dates are read-only':'＋ Add appointment';
     $('sideAdd').title=isPastDate?'Past dates are read-only':'Add appointment';
-    const items=appointments.filter(a=>a.date===selectedDate).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    const items=appointments.filter(a=>a.date===selectedDate).sort((a,b)=>(a.time24||'').localeCompare(b.time24||''));
     $('dayTotal').textContent=`${items.length} ${items.length===1?'appointment':'total'}`;
     const target=$('appointmentList');
     if(!items.length){
@@ -676,7 +695,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       $('modalTitle').textContent='Edit appointment';
       saveButton.textContent='Update appointment';
       $('client').value=a.client||'';$('phone').value=a.phone||'';
-      $('date').value=a.date||selectedDate;$('time').value=a.time||'';
+      $('date').value=a.date||selectedDate;$('time').value=a.time24||'';$('time').dataset.confirmed=a.time24?'true':'false';$('setTimeBtn').textContent=a.time24?'Set ✓':'Set';$('timeSetHint').textContent=a.time24?'Time confirmed':'Choose a time, then click Set.';
       $('sales').value=a.sales||currentDisplayName();$('measurer').value=a.measurer||'';
       $('address').value=a.address||'';$('mapLocation').value=a.mapLocation||'';$('requirements').value=a.requirements||'';
       $('siteStatus').value=a.siteStatus||'';$('status').value=a.status||'Pending';
@@ -685,7 +704,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       $('modalTitle').textContent='New appointment';
       saveButton.textContent='Save appointment';
       $('date').value=selectedDate;$('status').value='Confirmed';
-      $('sales').value=currentDisplayName();
+      $('sales').value=currentDisplayName();$('time').dataset.confirmed='false';$('setTimeBtn').textContent='Set';$('timeSetHint').textContent='Choose a time, then click Set.';
     }
     $('modalBackdrop').classList.add('open');$('client').focus();
   }
@@ -800,7 +819,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
 
   function printDay(){
     const items=appointments.filter(a=>a.date===selectedDate).slice()
-      .sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      .sort((a,b)=>(a.time24||'').localeCompare(b.time24||''));
     if(!items.length){toast('No appointments to print for this day.');return;}
     prepareMeasurementPrint(items.map(measurementFormMarkup).join(''));
   }
@@ -941,13 +960,29 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
   $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
+    $('time').addEventListener('input',()=>{
+    $('time').dataset.confirmed='false';
+    $('setTimeBtn').textContent='Set';
+    $('timeSetHint').textContent=$('time').value?'Click Set to confirm this time.':'Choose a time, then click Set.';
+  });
+  $('setTimeBtn').onclick=()=>{
+    const selected=$('time').value;
+    if(!selected){$('time').focus();return;}
+    if(selected<'09:30'||selected>'16:00')return;
+    $('time').dataset.confirmed='true';
+    $('setTimeBtn').textContent='Set ✓';
+    $('timeSetHint').textContent=`Time confirmed: ${formatTime12(selected)}`;
+  };
   $('appointmentForm').addEventListener('submit',async e=>{
     e.preventDefault();
+    const enteredTime=$('time').value;
+    if(enteredTime&&$('time').dataset.confirmed!=='true'){$('timeSetHint').textContent='Click Set to confirm this time.';$('time').focus();return;}
+    const appointmentTime24=enteredTime||null;
     const payload={
       client_name:$('client').value.trim(),
       contact_no:$('phone').value.trim()||null,
       appointment_date:$('date').value,
-      appointment_time:$('time').value||null,
+      appointment_time:appointmentTime24,
       sales:$('sales').value.trim()||currentDisplayName(),
       measured_by:$('measurer').value.trim()||null,
       address:$('address').value.trim()||null,
