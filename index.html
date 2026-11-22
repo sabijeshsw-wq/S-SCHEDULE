@@ -174,7 +174,134 @@ form{padding:20px 22px}
 .employee-admin-message.error{color:var(--red)}.employee-admin-message.success{color:var(--green)}
 @media(max-width:800px){.employee-create-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.employee-create-grid{grid-template-columns:1fr}}
-</style>
+
+/* Premium visual theme: same layout and interactions, refined palette and surfaces. */
+@media screen {
+  :root{
+    --bg:#f3f5f2;--surface:#fffefa;--ink:#1d3034;--muted:#718083;--line:#e1e7e2;
+    --primary:#176b61;--primary-soft:#e8f2ef;--green:#287b60;--amber:#a97735;
+    --red:#b75050;--purple:#786694;--shadow:0 16px 42px rgba(29,48,52,.085);
+  }
+  body{background:radial-gradient(ellipse at 8% 0%,#e8efea 0,transparent 35%),linear-gradient(180deg,#f6f7f3 0%,var(--bg) 100%);color:var(--ink)}
+  .app{max-width:1480px;padding:34px 36px 48px}
+  .topbar{margin-bottom:30px}
+  .brand h1{font-size:19px;letter-spacing:-.5px;color:#1c3435}
+  .brand p{color:#7a8987}
+  .logo{background:linear-gradient(145deg,#247c70,#12584f);box-shadow:0 8px 20px rgba(23,107,97,.22);border:1px solid rgba(255,255,255,.35)}
+  .user-chip{border-color:#e0e7e1;background:rgba(255,254,250,.88);color:#536568;padding:8px 12px}
+  .avatar{background:#e7f1ed;color:#176b61}
+  .btn{border-color:#dfe6e1;background:#fffefa;color:#30464a;border-radius:11px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .btn:hover{transform:translateY(-2px);border-color:#b8cdc4;box-shadow:0 8px 18px rgba(29,48,52,.09)}
+  .btn.primary{background:linear-gradient(135deg,#20796d,#125b52);border-color:#176b61;color:#fff;box-shadow:0 7px 18px rgba(23,107,97,.22)}
+  .btn.primary:hover{background:linear-gradient(135deg,#176b61,#104f47)}
+  .heading h2{color:#1c3435;font-size:27px;letter-spacing:-.9px}
+  .heading p{color:#718083}
+  .stat{background:linear-gradient(145deg,#fffefa,#f9faf6);border:1px solid #e2e8e2;border-radius:14px;box-shadow:0 5px 16px rgba(29,48,52,.035)}
+  .stat span{color:#73817f}
+  .stat strong{color:#203a3b}
+  .panel,.employee-admin-panel{background:rgba(255,254,250,.96);border:1px solid #e1e7e2;border-radius:20px;box-shadow:var(--shadow)}
+  .calendar-panel{padding:24px}
+  .cal-toolbar{margin-bottom:20px}
+  .month-nav h3{color:#203a3b;font-size:19px}
+  .calendar{border-color:#e0e7e2;border-radius:14px}
+  .weekday{background:#f3f6f2;color:#73817e;border-color:#e0e7e2;letter-spacing:.85px}
+  .day{background:#fffefa;border-color:#e0e7e2;transition:background .16s ease,box-shadow .16s ease}
+  .day:hover{background:#f5f8f4}
+  .day.other{background:#f7f8f5;color:#b5bfba}
+  .day.selected{background:#edf5f1;box-shadow:inset 0 0 0 2px #7eaa9b}
+  .day.today .date-num{background:linear-gradient(145deg,#b48a50,#96703c);color:#fff;box-shadow:0 3px 8px rgba(150,112,60,.22)}
+  .date-num{border-radius:9px}
+  .count{color:#155b53;background:#e8f2ee;border:1px solid #d5e7df;border-radius:999px;padding:4px 9px;font-weight:750}
+  .side{padding:21px}
+  .side-head h3{color:#213a3c}
+  .day-total{background:#e9f2ed;color:#1d655a;border:1px solid #dceae2;border-radius:999px}
+  .appt{border-color:#e2e8e2;border-radius:13px;background:#fffefa;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+  .appt:hover{border-color:#c5d8ce;box-shadow:0 8px 20px rgba(29,48,52,.06);transform:translateY(-1px)}
+  .appt-time{color:#627477}
+  .appt h4{color:#203a3b;font-size:14px}
+  .appt p,.appt-meta{color:#748280}
+  .status{background:#fbf2e3;color:#946a2e}
+  .status.Confirmed,.status.Completed{background:#e7f3ed;color:#267454}
+  .status.Cancelled{background:#f9eaea;color:#a84b4d}
+  .status.Rescheduled{background:#f0ebf5;color:#715b8b}
+  .btn.danger{color:#ad4c4e;border-color:#efd9d8;background:#fffafa}
+  .empty{border-color:#d8e2dc;background:#fafbf8;border-radius:14px;color:#748280}
+  .empty strong{color:#41585a}
+  .note{background:#f4f6f1;border:1px solid #e5e9e2;border-radius:12px;color:#6e7e7b}
+  .legend{color:#71807d}
+  .dot{background:#b48a50}.dot.green{background:#39866b}.dot.red{background:#be6663}.dot.purple{background:#8873a2}
+  .auth-card{background:#fffefa;border-color:#e1e7e2;border-radius:22px;box-shadow:0 24px 64px rgba(29,48,52,.12)}
+  .auth-card h2{color:#1d3738}
+  .choice-btn{background:#fffefa;border-color:#e1e7e2;border-radius:15px;transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+  .choice-btn:hover{border-color:#a9c7ba;transform:translateY(-2px);box-shadow:0 10px 24px rgba(29,48,52,.07)}
+  .choice-icon{background:#e9f2ed;color:#176b61;border-radius:13px}
+  .field label{color:#4d6263}
+  .field input,.field select,.field textarea{border-color:#dce4df;border-radius:10px;background:#fffefa;color:#253b3e}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:#4c9282;box-shadow:0 0 0 3px rgba(23,107,97,.12)}
+  .modal{background:#fffefa;border-radius:20px;box-shadow:0 28px 76px rgba(22,44,45,.24)}
+  .modal-head{border-bottom-color:#e6ebe6}
+  .close{background:#f0f3ef;color:#607171;border-radius:9px}
+  .employee-admin-panel h3{color:#203a3b}
+  .toast{background:#203638;box-shadow:0 10px 28px rgba(20,42,43,.2)}
+}
+@media screen {
+  .day.friday-holiday:not(.past):not(.selected){background:#f6f0e5;box-shadow:inset 0 3px 0 #c5a46b}
+  .day.friday-holiday:not(.past):not(.selected):hover{background:#efe7d7}
+  .day.friday-holiday:not(.past) .date-num{color:#8d6b36}
+  .day.appointment-day:not(.past):not(.selected){background:#f0f6f2}
+  .day.appointment-day:not(.past)::after{content:"";position:absolute;bottom:8px;left:50%;width:5px;height:5px;transform:translateX(-50%);border-radius:50%;background:#398675}
+  .day.appointment-day:not(.past):hover{background:#e8f2ed}
+  .day.past:not(.selected){background:#ecefeb;color:#a3ada8}
+  .day.past .date-num{color:#9ba7a1}
+  .day.past .count{background:#e3e8e3;border-color:#d7ded8;color:#8a9690}
+  .day.past.selected{background:#e8ece8;color:#899590;box-shadow:inset 0 0 0 2px #b6c0ba}
+  .day.past.selected .date-num{color:#74817b}
+}
+@media screen {
+  :root{--bg:#edf3fb;--surface:#fcfdff;--ink:#162b49;--muted:#687c98;--line:#dce6f3;--primary:#2e66d3;--primary-soft:#e7effc;--shadow:0 16px 42px rgba(30,64,120,.09)}
+  body{background:radial-gradient(ellipse at 8% 0%,#e1ebfa 0,transparent 38%),linear-gradient(180deg,#f4f8fe 0%,#eaf1fa 100%);color:var(--ink)}
+  .brand h1,.heading h2,.month-nav h3,.side-head h3,.appt h4,.stat strong{color:#19365d}
+  .brand p,.heading p{color:#7488a2}
+  .logo{background:linear-gradient(145deg,#5790ef,#2855b4);box-shadow:0 8px 20px rgba(46,102,211,.25)}
+  .avatar,.choice-icon{background:#e6effd;color:#2c61bd}
+  .user-chip,.btn,.stat,.panel,.employee-admin-panel,.auth-card,.choice-btn,.appt{border-color:#dbe5f2}
+  .user-chip,.stat,.panel,.employee-admin-panel,.auth-card,.choice-btn,.appt{background:#fcfdff}
+  .btn{background:#fcfdff;color:#314c70}
+  .btn:hover{border-color:#adc5e8;box-shadow:0 8px 18px rgba(30,64,120,.1)}
+  .btn.primary{background:linear-gradient(135deg,#3e7be0,#2857b8);border-color:#2e66d3;box-shadow:0 7px 18px rgba(46,102,211,.25)}
+  .btn.primary:hover{background:linear-gradient(135deg,#326dd2,#234fa9)}
+  .calendar{border-color:#d9e4f2}
+  .weekday{background:#eaf1fb;color:#657b99;border-color:#d9e4f2}
+  .day{background:#f8fbff;border-color:#d9e4f2}
+  .day:hover{background:#eef5ff}
+  .day.other{background:#f0f4fa;color:#a7b5c8}
+  .day.selected{background:#e4efff;box-shadow:inset 0 0 0 2px #7198d5}
+  .day.today .date-num{background:linear-gradient(145deg,#4e83df,#2b5cbd);box-shadow:0 3px 8px rgba(46,102,211,.24)}
+  .count,.day-total{color:#2859ae;background:#e8f0fc;border-color:#d4e2f7}
+  .day.friday-holiday:not(.past):not(.selected){background:#f0f3fa;box-shadow:inset 0 3px 0 #c5a46b}
+  .day.friday-holiday:not(.past):not(.selected):hover{background:#e8edf7}
+  .day.friday-holiday:not(.past) .date-num{color:#826b42}
+  .day.appointment-day:not(.past):not(.selected){background:#edf5ff}
+  .day.appointment-day:not(.past)::after{background:#3a75d0}
+  .day.appointment-day:not(.past):hover{background:#e4efff}
+  .day.past:not(.selected){background:#e6ebf1;color:#9aa8b9}
+  .day.past .date-num{color:#8f9daf}
+  .day.past .count{background:#e0e6ed;border-color:#d3dce6;color:#8796a9}
+  .day.past.selected{background:#e2e8f0;color:#8190a3;box-shadow:inset 0 0 0 2px #acbbce}
+  .day.past.selected .date-num{color:#73849a}
+  .appt:hover{border-color:#b9cce6;box-shadow:0 8px 20px rgba(30,64,120,.08)}
+  .field input,.field select,.field textarea{border-color:#d8e3f0;background:#fcfdff;color:#233d62}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:#5e8fe0;box-shadow:0 0 0 3px rgba(46,102,211,.13)}
+  .modal{background:#fcfdff}
+  .close{background:#edf2f8;color:#637995}
+  .toast{background:#183459;box-shadow:0 10px 28px rgba(24,52,89,.22)}
+}
+@media screen {
+  .month-nav h3{min-width:205px;white-space:nowrap;font-size:17px}
+}
+@media screen and (max-width:650px) {
+  .month-nav h3{min-width:190px;font-size:15px}
+}</style>
 </head>
 <body>
 <div class="auth-wrap" id="choiceScreen">
@@ -263,13 +390,13 @@ form{padding:20px 22px}
         <div class="month-nav">
           <h3 id="monthLabel">November 2026</h3>
           <div class="nav-buttons">
-            <button class="btn icon" id="prevMonth" aria-label="Previous month">‹</button>
-            <button class="btn icon" id="nextMonth" aria-label="Next month">›</button>
+            <button class="btn icon" id="prevMonth" aria-label="Previous six weeks">‹</button>
+            <button class="btn icon" id="nextMonth" aria-label="Next six weeks">›</button>
           </div>
         </div>
         <div class="toolbar-right">
           <button class="btn today" id="todayBtn">Today</button>
-          <button class="btn" id="viewLabel" disabled>Month view</button>
+          <button class="btn" id="viewLabel" disabled>6-week view</button>
         </div>
       </div>
       <div class="calendar" id="calendar"></div>
@@ -336,6 +463,9 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
   let currentUser = null;
   let appointments = [];
   let shownMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  let calendarStart = new Date();
+  calendarStart.setHours(0,0,0,0);
+  calendarStart.setDate(calendarStart.getDate()-((calendarStart.getDay()+1)%7));
   let selectedDate = iso(new Date());
   let authMode = "employee";
   let savedSession = null;
@@ -443,22 +573,28 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     return appointments.filter(a=>{const d=new Date(a.date+'T12:00:00');return d.getFullYear()===y&&d.getMonth()===m;});
   }
   function render(){
-    $('monthLabel').textContent=shownMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+    const rangeEnd=new Date(calendarStart);rangeEnd.setDate(rangeEnd.getDate()+41);
+    const rangeStartLabel=calendarStart.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    const rangeEndLabel=rangeEnd.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+    $('monthLabel').textContent=`${rangeStartLabel} – ${rangeEndLabel}`;
     const list=monthAppointments();
     $('monthCount').textContent=list.length;
     $('pendingCount').textContent=list.filter(a=>a.status==='Pending').length;
     $('completedCount').textContent=list.filter(a=>a.status==='Completed').length;
-    const first=new Date(shownMonth.getFullYear(),shownMonth.getMonth(),1);
-    const start=new Date(first);start.setDate(1-first.getDay());
+    const start=new Date(calendarStart);
     const cal=$('calendar');
-    cal.innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="weekday">${d}</div>`).join('');
+    cal.innerHTML=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'].map(d=>`<div class="weekday">${d}</div>`).join('');
     for(let i=0;i<42;i++){
       const d=new Date(start);d.setDate(start.getDate()+i);
       const key=iso(d),dayItems=appointments.filter(a=>a.date===key).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
       const classes=['day'];
+      const todayKey=iso(new Date());
       if(d.getMonth()!==shownMonth.getMonth())classes.push('other');
+      if(d.getDay()===5)classes.push('friday-holiday');
+      if(d.getDay()===0||d.getDay()===3)classes.push('appointment-day');
+      if(key<todayKey)classes.push('past');
       if(key===selectedDate)classes.push('selected');
-      if(key===iso(new Date()))classes.push('today');
+      if(key===todayKey)classes.push('today');
       const cell=document.createElement('button');cell.type='button';cell.className=classes.join(' ');
       cell.setAttribute('aria-label',`${prettyDate(key)}: ${dayItems.length} appointments`);
       const count=dayItems.length?`<span class="count">${dayItems.length} ${dayItems.length===1?'appointment':'appointments'}</span>`:'';
@@ -698,9 +834,15 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     if(error)toast(error.message);else {localStorage.removeItem('smartScheduleRememberedName');showLogin();}
   };
 
-    $('prevMonth').onclick=()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()-1,1);render();};
-  $('nextMonth').onclick=()=>{shownMonth=new Date(shownMonth.getFullYear(),shownMonth.getMonth()+1,1);render();};
-  $('todayBtn').onclick=()=>{const now=new Date();shownMonth=new Date(now.getFullYear(),now.getMonth(),1);selectedDate=iso(now);render();};
+      function shiftCalendar(weeks){
+    calendarStart.setDate(calendarStart.getDate()+weeks*42);
+    shownMonth=new Date(calendarStart.getFullYear(),calendarStart.getMonth(),1);
+    selectedDate=iso(calendarStart);
+    render();
+  }
+  $('prevMonth').onclick=()=>shiftCalendar(-1);
+  $('nextMonth').onclick=()=>shiftCalendar(1);
+  $('todayBtn').onclick=()=>{const now=new Date();shownMonth=new Date(now.getFullYear(),now.getMonth(),1);calendarStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());calendarStart.setDate(calendarStart.getDate()-((calendarStart.getDay()+1)%7));selectedDate=iso(now);render();};
   $('printDayBtn').onclick=printDay;
   $('appointmentList').addEventListener('click',e=>{
     const editButton=e.target.closest('[data-edit-appt]');
