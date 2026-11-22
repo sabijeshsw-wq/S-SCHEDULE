@@ -301,6 +301,14 @@ form{padding:20px 22px}
 }
 @media screen and (max-width:650px) {
   .month-nav h3{min-width:190px;font-size:15px}
+}
+@media screen {
+  .btn.whatsapp{color:#16764f;background:#eaf7ef;border-color:#cfe9d8}
+  .btn.whatsapp:hover{background:#def1e5;border-color:#b6ddc4}
+}
+@media screen {
+  .btn.map-link{color:#275db8;background:#eaf1fc;border-color:#ceddf4}
+  .btn.map-link:hover{background:#dfeafb;border-color:#b6cbed}
 }</style>
 </head>
 <body>
@@ -390,13 +398,13 @@ form{padding:20px 22px}
         <div class="month-nav">
           <h3 id="monthLabel">November 2026</h3>
           <div class="nav-buttons">
-            <button class="btn icon" id="prevMonth" aria-label="Previous six weeks">‹</button>
-            <button class="btn icon" id="nextMonth" aria-label="Next six weeks">›</button>
+            <button class="btn icon" id="prevMonth" aria-label="Previous four weeks">‹</button>
+            <button class="btn icon" id="nextMonth" aria-label="Next four weeks">›</button>
           </div>
         </div>
         <div class="toolbar-right">
           <button class="btn today" id="todayBtn">Today</button>
-          <button class="btn" id="viewLabel" disabled>6-week view</button>
+          <button class="btn" id="viewLabel" disabled>4-week view</button>
         </div>
       </div>
       <div class="calendar" id="calendar"></div>
@@ -434,6 +442,7 @@ form{padding:20px 22px}
         <div class="field"><label for="sales">Salesperson</label><input id="sales" placeholder="Salesperson name"></div>
         <div class="field"><label for="measurer">Measured by</label><input id="measurer" placeholder="Assigned measurer"></div>
         <div class="field full"><label for="address">Address</label><input id="address" placeholder="Customer location"></div>
+        <div class="field full"><label for="mapLocation">Google Maps location</label><input id="mapLocation" placeholder="Paste a Maps link or enter an address"></div>
         <div class="field full"><label for="requirements">Requirements</label><input id="requirements" placeholder="e.g. Master bedroom wardrobe"></div>
         <div class="field"><label for="siteStatus">Site status</label><input id="siteStatus" placeholder="e.g. Ready / Not ready"></div>
         <div class="field"><label for="status">Appointment status</label><select id="status"><option>Confirmed</option><option>Pending</option><option>Completed</option><option>Cancelled</option><option>Rescheduled</option></select></div>
@@ -554,10 +563,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       return;
     }
     appointments=(data||[]).map(row=>({
-      id:row.id,client:row.client_name||"",phone:row.contact_no||"",
+      id:row.id,createdBy:row.created_by||"",client:row.client_name||"",phone:row.contact_no||"",
       date:row.appointment_date,time:row.appointment_time?String(row.appointment_time).slice(0,5):"",
       sales:row.sales||"",measurer:row.measured_by||"",address:row.address||"",
-      requirements:row.requirements||"",siteStatus:row.site_status||"",
+      requirements:row.requirements||"",mapLocation:row.map_location||"",siteStatus:row.site_status||"",
       status:row.appointment_status||"Pending",notes:row.notes||""
     }));
     render();
@@ -573,7 +582,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     return appointments.filter(a=>{const d=new Date(a.date+'T12:00:00');return d.getFullYear()===y&&d.getMonth()===m;});
   }
   function render(){
-    const rangeEnd=new Date(calendarStart);rangeEnd.setDate(rangeEnd.getDate()+41);
+    const rangeEnd=new Date(calendarStart);rangeEnd.setDate(rangeEnd.getDate()+27);
     const rangeStartLabel=calendarStart.toLocaleDateString(undefined,{month:'short',day:'numeric'});
     const rangeEndLabel=rangeEnd.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
     $('monthLabel').textContent=`${rangeStartLabel} – ${rangeEndLabel}`;
@@ -584,7 +593,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     const start=new Date(calendarStart);
     const cal=$('calendar');
     cal.innerHTML=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'].map(d=>`<div class="weekday">${d}</div>`).join('');
-    for(let i=0;i<42;i++){
+    for(let i=0;i<28;i++){
       const d=new Date(start);d.setDate(start.getDate()+i);
       const key=iso(d),dayItems=appointments.filter(a=>a.date===key).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
       const classes=['day'];
@@ -620,9 +629,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       <div class="appt-meta"><span>${escapeHtml(a.sales||'No salesperson')}</span><span>${escapeHtml(a.measurer||'No measurer')}</span></div>
       ${a.phone?`<div class="appt-meta">${escapeHtml(a.phone)}</div>`:''}
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px">
-        <button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button>
+        ${isAdmin(currentUser)||String(a.createdBy)===String(currentUser?.id)?`<button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button><button type="button" class="btn print-action danger" data-delete-appt="${escapeHtml(a.id)}">Delete</button>`:''}
         <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print measurement form</button>
-        <button type="button" class="btn print-action danger" data-delete-appt="${escapeHtml(a.id)}">Delete</button>
+        <button type="button" class="btn print-action whatsapp" data-whatsapp-appt="${escapeHtml(a.id)}">WhatsApp</button>
+        <button type="button" class="btn print-action map-link" data-map-appt="${escapeHtml(a.id)}">Map</button>
+
       </div>
     </article>`).join('');
   }
@@ -638,7 +649,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       $('client').value=a.client||'';$('phone').value=a.phone||'';
       $('date').value=a.date||selectedDate;$('time').value=a.time||'';
       $('sales').value=a.sales||'';$('measurer').value=a.measurer||'';
-      $('address').value=a.address||'';$('requirements').value=a.requirements||'';
+      $('address').value=a.address||'';$('mapLocation').value=a.mapLocation||'';$('requirements').value=a.requirements||'';
       $('siteStatus').value=a.siteStatus||'';$('status').value=a.status||'Pending';
       $('notes').value=a.notes||'';
     }else{
@@ -654,7 +665,33 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     setTimeout(()=>t.classList.remove('show'),2800);
   }
 
-  async function deleteAppointment(id){
+  function openWhatsAppChat(id){
+    const appointment=appointments.find(item=>String(item.id)===String(id));
+    if(!appointment){toast('Appointment not found.');return;}
+    let phone=String(appointment.phone||'').replace(/\D/g,'');
+    if(phone.startsWith('00'))phone=phone.slice(2);
+    if(phone.length===9&&phone.startsWith('0'))phone=phone.slice(1);
+    if(phone.length===8)phone='965'+phone;
+    if(!phone.startsWith('965')||phone.length!==11){toast('Enter a valid 8-digit Kuwait number or include country code 965.');return;}
+    window.open(`https://wa.me/${phone}`,'_blank','noopener,noreferrer');
+  }
+
+  function openMapLocation(id){
+    const appointment=appointments.find(item=>String(item.id)===String(id));
+    if(!appointment){toast('Appointment not found.');return;}
+    const location=String(appointment.mapLocation||appointment.address||'').trim();
+    if(!location){toast('Add a Google Maps location or address first.');return;}
+    let destination='';
+    try{
+      const parsed=new URL(location);
+      const host=parsed.hostname.toLowerCase();
+      const isMapsHost=host==='maps.app.goo.gl'||(host==='goo.gl'&&parsed.pathname.startsWith('/maps'))||host==='maps.google.com'||((host==='google.com'||host==='www.google.com')&&parsed.pathname.startsWith('/maps'));
+      if(isMapsHost)destination=parsed.href;
+      else if(/^https?:\/\//i.test(location)){toast('Use a Google Maps link or enter a place/address.');return;}
+    }catch{}
+    if(!destination)destination=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+    window.open(destination,'_blank','noopener,noreferrer');
+  }  async function deleteAppointment(id){
     const appointment=appointments.find(item=>String(item.id)===String(id));
     if(!appointment){toast('Appointment not found.');return;}
     if(!window.confirm(`Delete the appointment for ${appointment.client}? This cannot be undone.`))return;
@@ -835,7 +872,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
   };
 
       function shiftCalendar(weeks){
-    calendarStart.setDate(calendarStart.getDate()+weeks*42);
+    calendarStart.setDate(calendarStart.getDate()+weeks*28);
     shownMonth=new Date(calendarStart.getFullYear(),calendarStart.getMonth(),1);
     selectedDate=iso(calendarStart);
     render();
@@ -849,6 +886,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     if(editButton){openModal(editButton.getAttribute('data-edit-appt'));return;}
     const printButton=e.target.closest('[data-print-appt]');
     if(printButton){printMeasurementForm(printButton.getAttribute('data-print-appt'));return;}
+    const whatsappButton=e.target.closest('[data-whatsapp-appt]');
+    if(whatsappButton){openWhatsAppChat(whatsappButton.getAttribute('data-whatsapp-appt'));return;}
+    const mapButton=e.target.closest('[data-map-appt]');
+    if(mapButton){openMapLocation(mapButton.getAttribute('data-map-appt'));return;}
     const deleteButton=e.target.closest('[data-delete-appt]');
     if(deleteButton)deleteAppointment(deleteButton.getAttribute('data-delete-appt'));
   });
@@ -867,6 +908,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       sales:$('sales').value.trim()||null,
       measured_by:$('measurer').value.trim()||null,
       address:$('address').value.trim()||null,
+      map_location:$('mapLocation').value.trim()||null,
       requirements:$('requirements').value.trim()||null,
       site_status:$('siteStatus').value.trim()||null,
       appointment_status:$('status').value,
