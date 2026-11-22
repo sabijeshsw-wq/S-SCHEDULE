@@ -326,10 +326,6 @@ form{padding:20px 22px}
   .btn:disabled{cursor:not-allowed;opacity:.48;transform:none;box-shadow:none}
 }
 @media screen {
-  .time-entry{display:flex;align-items:stretch;gap:7px}
-  .time-entry input{min-width:0;flex:1}
-  .time-set{padding:8px 13px;color:#275db8;background:#eaf1fc;border-color:#ceddf4}
-  .time-set:hover{background:#dfeafb;border-color:#b6cbed}
 }
 @media screen {
   .time-set-hint{display:block;color:#7185a1;font-size:10px;line-height:1.35;margin-top:5px}
@@ -463,7 +459,7 @@ form{padding:20px 22px}
         <div class="field"><label for="client">Customer name *</label><input id="client" required placeholder="Enter customer name"></div>
         <div class="field"><label for="phone">Contact number</label><input id="phone" placeholder="Phone number"></div>
         <div class="field"><label for="date">Appointment date *</label><input id="date" type="date" required></div>
-        <div class="field"><label for="time">Appointment time (9:30 AM–4:00 PM)</label><div class="time-entry"><input id="time" type="time" lang="en-US" min="09:30" max="16:00"><button class="btn time-set" id="setTimeBtn" type="button">Set</button></div><small id="timeSetHint" class="time-set-hint">Choose a time, then click Set.</small></div>
+        <div class="field"><label for="time">Appointment time (9:30 AM–4:00 PM)</label><input id="time" type="time" lang="en-US" min="09:30" max="16:00" step="60" aria-label="Appointment time"></div>
         <div class="field"><label for="sales">Salesperson</label><input id="sales" placeholder="Salesperson name"></div>
         <div class="field"><label for="measurer">Measured by</label><input id="measurer" placeholder="Assigned measurer"></div>
         <div class="field full"><label for="address">Address</label><input id="address" placeholder="Customer location"></div>
@@ -695,7 +691,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       $('modalTitle').textContent='Edit appointment';
       saveButton.textContent='Update appointment';
       $('client').value=a.client||'';$('phone').value=a.phone||'';
-      $('date').value=a.date||selectedDate;$('time').value=a.time24||'';$('time').dataset.confirmed=a.time24?'true':'false';$('setTimeBtn').textContent=a.time24?'Set ✓':'Set';$('timeSetHint').textContent=a.time24?'Time confirmed':'Choose a time, then click Set.';
+      $('date').value=a.date||selectedDate;$('time').value=String(a.time24||'').slice(0,5);
       $('sales').value=a.sales||currentDisplayName();$('measurer').value=a.measurer||'';
       $('address').value=a.address||'';$('mapLocation').value=a.mapLocation||'';$('requirements').value=a.requirements||'';
       $('siteStatus').value=a.siteStatus||'';$('status').value=a.status||'Pending';
@@ -704,7 +700,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       $('modalTitle').textContent='New appointment';
       saveButton.textContent='Save appointment';
       $('date').value=selectedDate;$('status').value='Confirmed';
-      $('sales').value=currentDisplayName();$('time').dataset.confirmed='false';$('setTimeBtn').textContent='Set';$('timeSetHint').textContent='Choose a time, then click Set.';
+      $('sales').value=currentDisplayName();$('time').value='';
     }
     $('modalBackdrop').classList.add('open');$('client').focus();
   }
@@ -959,24 +955,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
   $('closeModal').onclick=$('cancelModal').onclick=closeModal;
   $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-
-    $('time').addEventListener('input',()=>{
-    $('time').dataset.confirmed='false';
-    $('setTimeBtn').textContent='Set';
-    $('timeSetHint').textContent=$('time').value?'Click Set to confirm this time.':'Choose a time, then click Set.';
-  });
-  $('setTimeBtn').onclick=()=>{
-    const selected=$('time').value;
-    if(!selected){$('time').focus();return;}
-    if(selected<'09:30'||selected>'16:00')return;
-    $('time').dataset.confirmed='true';
-    $('setTimeBtn').textContent='Set ✓';
-    $('timeSetHint').textContent=`Time confirmed: ${formatTime12(selected)}`;
-  };
   $('appointmentForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const enteredTime=$('time').value;
-    if(enteredTime&&$('time').dataset.confirmed!=='true'){$('timeSetHint').textContent='Click Set to confirm this time.';$('time').focus();return;}
+    if(enteredTime&&(enteredTime<'09:30'||enteredTime>'16:00')){toast('Choose a time from 9:30 AM to 4:00 PM.');$('time').focus();return;}
+    if(editingAppointmentId){const original=appointments.find(item=>String(item.id)===editingAppointmentId);if(original?.time24&&!(original.time24>='09:30'&&original.time24<='16:00')&&!enteredTime){toast('Choose a new time from 9:30 AM to 4:00 PM.');$('time').focus();return;}}
+
     const appointmentTime24=enteredTime||null;
     const payload={
       client_name:$('client').value.trim(),
