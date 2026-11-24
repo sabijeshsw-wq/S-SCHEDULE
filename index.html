@@ -305,6 +305,8 @@ form{padding:20px 22px}
 @media screen {
   .btn.whatsapp{color:#16764f;background:#eaf7ef;border-color:#cfe9d8}
   .btn.whatsapp:hover{background:#def1e5;border-color:#b6ddc4}
+  .btn.photos{color:#275db8;background:#eaf1fc;border-color:#ceddf4}
+  .btn.photos:hover{background:#dfeafb;border-color:#b6cbed}
 }
 @media screen {
   .btn.map-link{color:#275db8;background:#eaf1fc;border-color:#ceddf4}
@@ -483,6 +485,7 @@ form{padding:20px 22px}
 // NEVER put your database password or service_role/secret key in this file.
 const SUPABASE_URL = "https://chpoqkmckyomvfdrtpra.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
+const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:/g/personal/sabijesh_smartwoodkw_com/IgDL11AOZpZUSaA0PJmhLnBwAedIeogwys93zKgVczoJ7fQ?e=4gWOpC";
 
 (() => {
   const $ = id => document.getElementById(id);
@@ -586,6 +589,14 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     const role=user?.app_metadata?.role;
     return user?.app_metadata?.is_admin===true || String(role||'').toLowerCase()==='admin';
   }
+  function canEditAppointment(appointment,todayKey=iso(new Date())){
+    return appointment.date>=todayKey &&
+      (isAdmin(currentUser)||String(appointment.createdBy)===String(currentUser?.id));
+  }
+  function canDeleteAppointment(appointment,todayKey=iso(new Date())){
+    return isAdmin(currentUser) ||
+      (appointment.date>=todayKey&&String(appointment.createdBy)===String(currentUser?.id));
+  }
   async function loadAppointments(){
     $('appointmentList').innerHTML='<div class="empty"><strong>Loading appointments…</strong><span>Connecting to your shared schedule.</span></div>';
     const {data,error}=await supabase.from('appointments')
@@ -651,7 +662,9 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     $('selectedLabel').textContent=prettyDate(selectedDate,{weekday:'long',day:'numeric',month:'long'});
     const todayKey=iso(new Date());
     const isPastDate=selectedDate<todayKey;
-    $('selectedSub').textContent=isPastDate?'Past appointment log — read only':'Appointments scheduled for this date';
+    $('selectedSub').textContent=isPastDate
+      ? (isAdmin(currentUser)?'Past appointment log — administrators can delete':'Past appointment log — read only')
+      : 'Appointments scheduled for this date';
     $('sideAdd').disabled=isPastDate;
     $('sideAdd').textContent=isPastDate?'Past dates are read-only':'＋ Add appointment';
     $('sideAdd').title=isPastDate?'Past dates are read-only':'Add appointment';
@@ -669,9 +682,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
       <div class="appt-detail"><strong>Address</strong><span>${escapeHtml(a.address||'Not provided')}</span></div>
       <div class="appt-detail"><strong>Salesperson</strong><span>${escapeHtml(a.sales||'Not assigned')}</span></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px">
-        ${a.date>=todayKey&&(isAdmin(currentUser)||String(a.createdBy)===String(currentUser?.id))?`<button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button><button type="button" class="btn print-action danger" data-delete-appt="${escapeHtml(a.id)}">Delete</button>`:''}
+        ${canEditAppointment(a,todayKey)?`<button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button>`:''}
+        ${canDeleteAppointment(a,todayKey)?`<button type="button" class="btn print-action danger" data-delete-appt="${escapeHtml(a.id)}">Delete</button>`:''}
         <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print measurement form</button>
         <button type="button" class="btn print-action whatsapp" data-whatsapp-appt="${escapeHtml(a.id)}">WhatsApp</button>
+        <button type="button" class="btn print-action photos" data-photos-appt="${escapeHtml(a.id)}">Photos</button>
         <button type="button" class="btn print-action map-link" data-map-appt="${escapeHtml(a.id)}">Map</button>
 
       </div>
@@ -705,9 +720,18 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     $('modalBackdrop').classList.add('open');$('client').focus();
   }
   function closeModal(){$('modalBackdrop').classList.remove('open');editingAppointmentId=null;}
-  function toast(msg){
+  function toast(msg,duration=2800){
     const t=$('toast');t.textContent=msg;t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),2800);
+    setTimeout(()=>t.classList.remove('show'),duration);
+  }
+
+  async function openAppointmentPhotos(id){
+    const appointment=appointments.find(item=>String(item.id)===String(id));
+    if(!appointment){toast('Appointment not found.');return;}
+    const folderName='APPT-'+String(appointment.id).replace(/[^A-Za-z0-9_-]/g,'-');
+    const photoTab=window.open(ONEDRIVE_MASTER_FOLDER_URL,'_blank');
+    if(!photoTab){toast('Allow popups so OneDrive can open.');return;}
+    toast('In the shared master folder, open or create '+folderName+'.',6500);
   }
 
   function openWhatsAppChat(id){
@@ -752,6 +776,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
   }  async function deleteAppointment(id){
     const appointment=appointments.find(item=>String(item.id)===String(id));
     if(!appointment){toast('Appointment not found.');return;}
+    if(!canDeleteAppointment(appointment)){toast('You do not have permission to delete this appointment.');return;}
     if(!window.confirm(`Delete the appointment for ${appointment.client}? This cannot be undone.`))return;
     const {data,error}=await supabase.from('appointments').delete().eq('id',id).select('id');
     if(error){toast(`Could not delete: ${error.message}`);return;}
@@ -946,6 +971,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     if(printButton){printMeasurementForm(printButton.getAttribute('data-print-appt'));return;}
     const whatsappButton=e.target.closest('[data-whatsapp-appt]');
     if(whatsappButton){openWhatsAppChat(whatsappButton.getAttribute('data-whatsapp-appt'));return;}
+    const photosButton=e.target.closest('[data-photos-appt]');
+    if(photosButton){openAppointmentPhotos(photosButton.getAttribute('data-photos-appt'));return;}
     const mapButton=e.target.closest('[data-map-appt]');
     if(mapButton){openMapLocation(mapButton.getAttribute('data-map-appt'));return;}
     const deleteButton=e.target.closest('[data-delete-appt]');
@@ -987,7 +1014,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_IjcT3HLQcPyAa3LvcwmOnQ_koS2EMk5";
     if(wasEditing){
       result=await supabase.from('appointments').update(payload).eq('id',editingAppointmentId);
     }else{
-      result=await supabase.from('appointments').insert({...payload,created_by:currentUser.id});
+      result=await supabase.from('appointments').insert({...payload,created_by:currentUser.id}).select('id').single();
     }
     saveButton.disabled=false;saveButton.textContent=wasEditing?'Update appointment':'Save appointment';
     if(result.error){toast(`Could not save: ${result.error.message}`);return;}
