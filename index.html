@@ -461,7 +461,7 @@ form{padding:20px 22px}
         <div class="field"><label for="client">Customer name *</label><input id="client" required placeholder="Enter customer name"></div>
         <div class="field"><label for="phone">Contact number</label><input id="phone" placeholder="Phone number"></div>
         <div class="field"><label for="date">Appointment date *</label><input id="date" type="date" required></div>
-        <div class="field"><label for="time">Appointment time (9:30 AM–4:00 PM)</label><input id="time" type="time" lang="en-US" min="09:30" max="16:00" step="60" aria-label="Appointment time"></div>
+        <div class="field"><label for="time">Appointment session *</label><select id="time" required aria-label="Appointment session"><option value="">Select a session</option></select><small class="time-set-hint">Sessions already booked for this date are unavailable.</small></div>
         <div class="field"><label for="sales">Salesperson</label><input id="sales" placeholder="Salesperson name"></div>
         <div class="field"><label for="measurer">Measured by</label><input id="measurer" placeholder="Assigned measurer"></div>
         <div class="field full"><label for="address">Address</label><input id="address" placeholder="Customer location"></div>
@@ -504,6 +504,13 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   let savedSession = null;
   let realtimeChannel = null;
   let editingAppointmentId = null;
+  const SESSION_SLOTS=[
+    {number:1,start:'08:00',end:'11:00'},
+    {number:2,start:'09:30',end:'12:30'},
+    {number:3,start:'11:00',end:'14:00'},
+    {number:4,start:'12:00',end:'15:00'},
+    {number:5,start:'13:00',end:'16:00'}
+  ];
 
   function iso(d){
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -516,6 +523,13 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     const suffix=hour24>=12?'PM':'AM';
     const hour12=hour24%12||12;
     return `${hour12}:${match[2]} ${suffix}`;
+  }
+  function sessionForTime(value){
+    return SESSION_SLOTS.find(slot=>slot.start===String(value||'').slice(0,5));
+  }
+  function formatSessionLabel(value){
+    const slot=sessionForTime(value);
+    return slot?`Session ${slot.number} · ${formatTime12(slot.start)}–${formatTime12(slot.end)}`:formatTime12(value);
   }
   function prettyDate(s, opts={weekday:'long',day:'numeric',month:'long'}){
     return new Date(s+'T12:00:00').toLocaleDateString(undefined,opts);
@@ -597,6 +611,25 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     return isAdmin(currentUser) ||
       (appointment.date>=todayKey&&String(appointment.createdBy)===String(currentUser?.id));
   }
+  function refreshTimeOptions(){
+    const select=$('time');
+    if(!select)return;
+    const selected=select.value;
+    const selectedDate=$('date').value;
+    select.replaceChildren();
+    const prompt=document.createElement('option');
+    prompt.value='';prompt.textContent='Select a session';select.appendChild(prompt);
+    SESSION_SLOTS.forEach(slot=>{
+      const option=document.createElement('option');
+      option.value=slot.start;
+      const occupied=Boolean(selectedDate)&&appointments.some(a=>a.date===selectedDate&&a.time24===slot.start&&String(a.id)!==String(editingAppointmentId||''));
+      option.disabled=occupied;
+      option.textContent=`Session ${slot.number} · ${formatTime12(slot.start)}–${formatTime12(slot.end)}${occupied?' — Unavailable':''}`;
+      select.appendChild(option);
+    });
+    const selectedOption=Array.from(select.options).find(option=>option.value===selected);
+    if(selectedOption&&!selectedOption.disabled)select.value=selected;
+  }
   async function loadAppointments(){
     $('appointmentList').innerHTML='<div class="empty"><strong>Loading appointments…</strong><span>Connecting to your shared schedule.</span></div>';
     const {data,error}=await supabase.from('appointments')
@@ -609,11 +642,12 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     }
     appointments=(data||[]).map(row=>({
       id:row.id,createdBy:row.created_by||"",client:row.client_name||"",phone:row.contact_no||"",
-      date:row.appointment_date,time:formatTime12(row.appointment_time?String(row.appointment_time).slice(0,5):""),time24:row.appointment_time?String(row.appointment_time).slice(0,5):"",
+      date:row.appointment_date,time:formatSessionLabel(row.appointment_time?String(row.appointment_time).slice(0,5):""),time24:row.appointment_time?String(row.appointment_time).slice(0,5):"",
       sales:row.sales||"",measurer:row.measured_by||"",address:row.address||"",
       requirements:row.requirements||"",mapLocation:row.map_location||"",siteStatus:row.site_status||"",
       status:row.appointment_status||"Pending",notes:row.notes||""
     }));
+    refreshTimeOptions();
     render();
   }
   function subscribeToChanges(){
@@ -706,7 +740,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       $('modalTitle').textContent='Edit appointment';
       saveButton.textContent='Update appointment';
       $('client').value=a.client||'';$('phone').value=a.phone||'';
-      $('date').value=a.date||selectedDate;$('time').value=String(a.time24||'').slice(0,5);
+      $('date').value=a.date||selectedDate;refreshTimeOptions();$('time').value=String(a.time24||'').slice(0,5);
       $('sales').value=a.sales||currentDisplayName();$('measurer').value=a.measurer||'';
       $('address').value=a.address||'';$('mapLocation').value=a.mapLocation||'';$('requirements').value=a.requirements||'';
       $('siteStatus').value=a.siteStatus||'';$('status').value=a.status||'Pending';
@@ -714,7 +748,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     }else{
       $('modalTitle').textContent='New appointment';
       saveButton.textContent='Save appointment';
-      $('date').value=selectedDate;$('status').value='Confirmed';
+      $('date').value=selectedDate;refreshTimeOptions();$('status').value='Confirmed';
       $('sales').value=currentDisplayName();$('time').value='';
     }
     $('modalBackdrop').classList.add('open');$('client').focus();
@@ -978,6 +1012,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     const deleteButton=e.target.closest('[data-delete-appt]');
     if(deleteButton)deleteAppointment(deleteButton.getAttribute('data-delete-appt'));
   });
+  $('date').addEventListener('change',refreshTimeOptions);
   $('sideAdd').onclick=()=>openModal();
   $('closeModal').onclick=$('cancelModal').onclick=closeModal;
   $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
@@ -985,8 +1020,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   $('appointmentForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const enteredTime=$('time').value;
-    if(enteredTime&&(enteredTime<'09:30'||enteredTime>'16:00')){toast('Choose a time from 9:30 AM to 4:00 PM.');$('time').focus();return;}
-    if(editingAppointmentId){const original=appointments.find(item=>String(item.id)===editingAppointmentId);if(original?.time24&&!(original.time24>='09:30'&&original.time24<='16:00')&&!enteredTime){toast('Choose a new time from 9:30 AM to 4:00 PM.');$('time').focus();return;}}
+    if(!SESSION_SLOTS.some(slot=>slot.start===enteredTime)){toast('Select one of the five appointment sessions.');$('time').focus();return;}
 
     const appointmentTime24=enteredTime||null;
     const payload={
@@ -1007,6 +1041,8 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     };
     if(payload.appointment_date<iso(new Date())){toast('Appointments can only be scheduled today or later.');return;}
     if(!payload.client_name||!payload.appointment_date)return;
+    const slotAlreadyTaken=appointments.some(a=>a.date===payload.appointment_date&&a.time24===appointmentTime24&&String(a.id)!==String(editingAppointmentId||''));
+    if(slotAlreadyTaken){toast('That session is already booked for this date. Choose another available session.');refreshTimeOptions();$('time').focus();return;}
     const saveButton=$('appointmentForm').querySelector('button[type="submit"]');
     const wasEditing=Boolean(editingAppointmentId);
     saveButton.disabled=true;saveButton.textContent=wasEditing?'Updating…':'Saving…';
@@ -1017,7 +1053,12 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       result=await supabase.from('appointments').insert({...payload,created_by:currentUser.id}).select('id').single();
     }
     saveButton.disabled=false;saveButton.textContent=wasEditing?'Update appointment':'Save appointment';
-    if(result.error){toast(`Could not save: ${result.error.message}`);return;}
+    if(result.error){
+      const duplicateSlot=result.error.code==='23505'||/duplicate key|unique constraint/i.test(result.error.message||'');
+      if(duplicateSlot){toast('That session was just booked by someone else. Choose another available session.');await loadAppointments();}
+      else toast(`Could not save: ${result.error.message}`);
+      return;
+    }
     editingAppointmentId=null;
     selectedDate=payload.appointment_date;
     const d=new Date(payload.appointment_date+'T12:00:00');shownMonth=new Date(d.getFullYear(),d.getMonth(),1);
