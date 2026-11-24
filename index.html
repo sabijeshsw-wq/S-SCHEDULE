@@ -172,8 +172,14 @@ form{padding:20px 22px}
 .employee-create-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}
 .employee-create-grid .field{margin:0}.employee-admin-message{margin-top:12px;font-size:13px;color:var(--muted)}
 .employee-admin-message.error{color:var(--red)}.employee-admin-message.success{color:var(--green)}
+.employee-user-management{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}
+.employee-user-management h4{margin:0 0 5px;font-size:14px}
+.employee-user-management p{margin:0 0 13px;color:var(--muted);font-size:12px}
+.employee-manage-grid{display:grid;grid-template-columns:minmax(180px,1fr) minmax(150px,1fr) auto;gap:12px;align-items:end}
+.employee-manage-grid .field{margin:0}.employee-management-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:800px){.employee-create-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){.employee-create-grid{grid-template-columns:1fr}}
+@media(max-width:800px){.employee-manage-grid{grid-template-columns:1fr 1fr}.employee-management-actions{grid-column:1/-1}}
+@media(max-width:520px){.employee-create-grid,.employee-manage-grid{grid-template-columns:1fr}.employee-management-actions{grid-column:auto}}
 
 /* Premium visual theme: same layout and interactions, refined palette and surfaces. */
 @media screen {
@@ -404,6 +410,20 @@ form{padding:20px 22px}
       </div>
     </form>
     <div class="employee-admin-message" id="employeeAdminMessage" aria-live="polite"></div>
+    <div class="employee-user-management">
+      <h4>Manage colleague access</h4>
+      <p>Reset a forgotten PIN without deleting the colleague or their appointment history. Deletion is blocked when the account has appointments.</p>
+      <div class="employee-manage-grid">
+        <div class="field"><label for="employeeToManage">Colleague username</label><select id="employeeToManage"><option value="">Choose a username</option></select></div>
+        <div class="field"><label for="replacementEmployeePin">New 6-digit PIN</label><input id="replacementEmployeePin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" placeholder="Enter replacement PIN"></div>
+        <div class="employee-management-actions">
+          <button type="button" class="btn primary" id="resetEmployeePinBtn">Reset PIN</button>
+          <button type="button" class="btn danger" id="deleteEmployeeBtn">Delete user</button>
+          <button type="button" class="btn" id="refreshEmployeeListBtn" aria-label="Refresh usernames">↻</button>
+        </div>
+      </div>
+      <div class="employee-admin-message" id="employeeManagementMessage" aria-live="polite"></div>
+    </div>
   </section>
 
   <section class="heading">
@@ -559,6 +579,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     $('userEmail').textContent=employeeName;
     $('userAvatar').textContent=employeeName.charAt(0).toUpperCase();
     $('employeeAdminPanel').style.display=isAdmin(user)?'block':'none';
+    if(isAdmin(user))loadManagedEmployees();
     loadAppointments();
     subscribeToChanges();
   }
@@ -602,6 +623,43 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   function isAdmin(user){
     const role=user?.app_metadata?.role;
     return user?.app_metadata?.is_admin===true || String(role||'').toLowerCase()==='admin';
+  }
+  async function invokeEmployeeManagement(action,payload={}){
+    const {data,error}=await supabase.functions.invoke('admin-manage-employees',{body:{action,...payload}});
+    if(error){
+      let detail=error.message||'Employee account action failed.';
+      if(error.context&&typeof error.context.clone==='function'){
+        try{const responseBody=await error.context.clone().json();if(responseBody?.error)detail=responseBody.error;}catch{}
+      }
+      throw new Error(detail);
+    }
+    if(!data||data.success!==true)throw new Error(data?.error||'The server did not confirm the employee account action.');
+    return data;
+  }
+  async function loadManagedEmployees(){
+    const select=$('employeeToManage');
+    const message=$('employeeManagementMessage');
+    const refreshButton=$('refreshEmployeeListBtn');
+    select.disabled=true;refreshButton.disabled=true;
+    message.textContent='Loading usernames…';message.className='employee-admin-message';
+    try{
+      const data=await invokeEmployeeManagement('list');
+      select.replaceChildren();
+      const prompt=document.createElement('option');prompt.value='';prompt.textContent='Choose a username';select.appendChild(prompt);
+      (data.employees||[]).forEach(employee=>{
+        const option=document.createElement('option');
+        option.value=employee.username;
+        option.textContent=`${employee.username}${employee.display_name?` — ${employee.display_name}`:''}${employee.is_active?'':' (inactive)'}`;
+        select.appendChild(option);
+      });
+      select.disabled=!(data.employees||[]).length;
+      message.textContent=(data.employees||[]).length?'Choose a colleague to reset their PIN or delete their account.':'No colleague accounts found.';
+      message.className='employee-admin-message';
+    }catch(error){
+      select.replaceChildren(new Option('Could not load usernames',''));
+      message.textContent=`Could not load usernames: ${error.message||'Check the admin-manage-employees Edge Function.'}`;
+      message.className='employee-admin-message error';
+    }finally{refreshButton.disabled=false;}
   }
   function canEditAppointment(appointment,todayKey=iso(new Date())){
     return appointment.date>=todayKey &&
@@ -960,7 +1018,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       if(error)throw error;
       if(!data || data.success!==true)throw new Error(data?.error || 'The server did not confirm account creation.');
       message.textContent=`Colleague account created: ${display_name} (username: ${username}). Share the username and PIN privately.`;
-      message.className='employee-admin-message success';$('createEmployeeForm').reset();
+      message.className='employee-admin-message success';$('createEmployeeForm').reset();await loadManagedEmployees();
     }catch(err){
       console.error('Smart Schedule admin-create-employee error:', err);
       let detail = err?.message || 'Could not create colleague account.';
@@ -982,6 +1040,43 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       message.className='employee-admin-message error';
     }finally{button.disabled=false;button.textContent='＋ Create colleague';}
   });
+
+  $('refreshEmployeeListBtn').onclick=loadManagedEmployees;
+  $('resetEmployeePinBtn').onclick=async()=>{
+    const message=$('employeeManagementMessage');
+    const username=$('employeeToManage').value;
+    const pin=$('replacementEmployeePin').value;
+    if(!currentUser||!isAdmin(currentUser)){message.textContent='Administrator access is required.';message.className='employee-admin-message error';return;}
+    if(!username){message.textContent='Choose a colleague username first.';message.className='employee-admin-message error';return;}
+    if(!/^\d{6}$/.test(pin)){message.textContent='The new PIN must contain exactly 6 digits.';message.className='employee-admin-message error';return;}
+    if(!window.confirm(`Reset the PIN for ${username}? Their current PIN will stop working.`))return;
+    const button=$('resetEmployeePinBtn');button.disabled=true;button.textContent='Resetting…';
+    message.textContent='Updating PIN securely…';message.className='employee-admin-message';
+    try{
+      await invokeEmployeeManagement('reset-pin',{username,pin});
+      $('replacementEmployeePin').value='';
+      message.textContent=`PIN reset for ${username}. Share the new PIN privately.`;
+      message.className='employee-admin-message success';
+    }catch(error){message.textContent=`Could not reset PIN: ${error.message}`;message.className='employee-admin-message error';}
+    finally{button.disabled=false;button.textContent='Reset PIN';}
+  };
+  $('deleteEmployeeBtn').onclick=async()=>{
+    const message=$('employeeManagementMessage');
+    const username=$('employeeToManage').value;
+    if(!currentUser||!isAdmin(currentUser)){message.textContent='Administrator access is required.';message.className='employee-admin-message error';return;}
+    if(!username){message.textContent='Choose a colleague username first.';message.className='employee-admin-message error';return;}
+    if(!window.confirm(`Permanently delete the account ${username}? Accounts with appointment history cannot be deleted; reset the PIN instead to keep those records.`))return;
+    const button=$('deleteEmployeeBtn');button.disabled=true;button.textContent='Deleting…';
+    message.textContent=`Deleting ${username}…`;message.className='employee-admin-message';
+    try{
+      await invokeEmployeeManagement('delete',{username});
+      $('replacementEmployeePin').value='';
+      message.textContent=`User ${username} was deleted.`;
+      message.className='employee-admin-message success';
+      await loadManagedEmployees();
+    }catch(error){message.textContent=`Could not delete user: ${error.message}`;message.className='employee-admin-message error';}
+    finally{button.disabled=false;button.textContent='Delete user';}
+  };
 
   $('signOutBtn').onclick=async()=>{
     const {error}=await supabase.auth.signOut();
