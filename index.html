@@ -641,6 +641,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     return user?.app_metadata?.is_admin===true || String(role||'').toLowerCase()==='admin';
   }
   function pushScopeUrl(){return new URL('./',document.baseURI).pathname;}
+  function pushOriginSupported(){return location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';}
   function base64UrlToBytes(value){
     const padded=(value+'='.repeat((4-value.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');
     const raw=atob(padded);
@@ -659,8 +660,13 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     if(!currentUser)return;
     const administrator=isAdmin(currentUser);
     try{
-      const registration=await navigator.serviceWorker.getRegistration(pushScopeUrl());
-      const subscription=registration?await registration.pushManager.getSubscription():null;
+      let subscription=null;
+      if('serviceWorker' in navigator&&'PushManager' in window){
+        try{
+          const registration=await navigator.serviceWorker.getRegistration(pushScopeUrl());
+          subscription=registration?await registration.pushManager.getSubscription():null;
+        }catch{}
+      }
       let selectedByAdmin=administrator;
       if(!administrator){
         const {data,error}=await supabase.from('push_notification_recipients')
@@ -670,7 +676,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       }
       if(!selectedByAdmin&&!subscription){button.style.display='none';return;}
       button.style.display='';
-      if(!window.isSecureContext||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+      if(!pushOriginSupported()||!window.isSecureContext||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
         button.disabled=true;button.textContent='Notifications unavailable';return;
       }
       if(Notification.permission==='denied'&&!subscription){
@@ -688,6 +694,9 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     const button=$('pushNotificationsBtn');
     button.disabled=true;
     try{
+      if(!pushOriginSupported()){
+        throw new Error('Open Smart Schedule from its HTTPS website to enable notifications. Do not open the downloaded HTML file directly.');
+      }
       if(!window.isSecureContext||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
         throw new Error('Browser push requires a supported browser and the HTTPS app address.');
       }
@@ -710,12 +719,15 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
         if(permission==='default')permission=await Notification.requestPermission();
         if(permission!=='granted')throw new Error('Allow notifications in your browser to receive appointment alerts.');
         registration=await navigator.serviceWorker.register(new URL('sw.js',document.baseURI),{scope});
-        const {data,error}=await supabase.functions.invoke('send-appointment-push',{body:{action:'public-key'}});
-        if(error)throw error;
-        if(!data?.success||!data.public_key)throw new Error(data?.error||'Push notification setup is incomplete.');
+        registration=await navigator.serviceWorker.ready;
+        if(new URL(registration.scope).pathname!==scope){
+          throw new Error('The active service worker is outside the app folder. Publish sw.js in the /S-SCHEDULE/ folder and reload.');
+        }
+        const keyData=await invokePushFunction('public-key');
+        if(!keyData.public_key)throw new Error('VAPID public key was not returned by the Edge Function.');
         subscription=await registration.pushManager.subscribe({
           userVisibleOnly:true,
-          applicationServerKey:base64UrlToBytes(data.public_key)
+          applicationServerKey:base64UrlToBytes(keyData.public_key)
         });
         try{await storePushSubscription(subscription);}
         catch(error){await subscription.unsubscribe();throw error;}
