@@ -176,6 +176,14 @@ form{padding:20px 22px}
 .employee-user-management p{margin:0 0 13px;color:var(--muted);font-size:12px}
 .employee-manage-grid{display:grid;grid-template-columns:minmax(180px,1fr) minmax(150px,1fr) auto;gap:12px;align-items:end}
 .employee-manage-grid .field{margin:0}.employee-management-actions{display:flex;gap:8px;flex-wrap:wrap}
+.employee-push-management{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}
+.employee-push-management h4{margin:0 0 5px;font-size:14px}
+.employee-push-management p{margin:0 0 12px;color:var(--muted);font-size:12px}
+.push-recipient-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.push-recipient-option{display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+.push-recipient-option input{margin:2px 0 0;accent-color:var(--primary)}
+.push-recipient-option span{display:grid;gap:3px;font-size:12px}
+.push-recipient-option small{color:var(--muted);font-size:10px;line-height:1.3}
 @media(max-width:800px){.employee-create-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:800px){.employee-manage-grid{grid-template-columns:1fr 1fr}.employee-management-actions{grid-column:1/-1}}
 @media(max-width:520px){.employee-create-grid,.employee-manage-grid{grid-template-columns:1fr}.employee-management-actions{grid-column:auto}}
@@ -393,6 +401,7 @@ form{padding:20px 22px}
     </div>
     <div class="top-actions">
       <div class="user-chip"><span class="avatar" id="userAvatar">U</span><span id="userEmail">Signed in</span></div>
+      <button class="btn" id="pushNotificationsBtn" type="button">Enable notifications</button>
       <button class="btn" id="signOutBtn">Sign out</button>
    </div>
   </header>
@@ -422,6 +431,13 @@ form{padding:20px 22px}
         </div>
       </div>
       <div class="employee-admin-message" id="employeeManagementMessage" aria-live="polite"></div>
+    </div>
+    <div class="employee-push-management">
+      <h4>Appointment notifications</h4>
+      <p>Administrators receive alerts by default. Select colleagues who should also receive new appointment alerts. Each selected colleague must enable browser notifications on their own device.</p>
+      <div class="push-recipient-list" id="pushRecipientList"><span class="employee-admin-message">Loading colleagues…</span></div>
+      <div class="employee-management-actions" style="margin-top:11px"><button type="button" class="btn primary" id="savePushRecipientsBtn">Save employee recipients</button></div>
+      <div class="employee-admin-message" id="pushRecipientMessage" aria-live="polite"></div>
     </div>
   </section>
 
@@ -578,7 +594,8 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     $('userEmail').textContent=employeeName;
     $('userAvatar').textContent=employeeName.charAt(0).toUpperCase();
     $('employeeAdminPanel').style.display=isAdmin(user)?'block':'none';
-    if(isAdmin(user))loadManagedEmployees();
+    if(isAdmin(user)){loadManagedEmployees();loadPushRecipients();}
+    updatePushNotificationButton();
     loadAppointments();
     subscribeToChanges();
   }
@@ -623,6 +640,79 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     const role=user?.app_metadata?.role;
     return user?.app_metadata?.is_admin===true || String(role||'').toLowerCase()==='admin';
   }
+  function pushScopeUrl(){return new URL('./',document.baseURI).pathname;}
+  function base64UrlToBytes(value){
+    const padded=(value+'='.repeat((4-value.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');
+    const raw=atob(padded);
+    return Uint8Array.from(raw,character=>character.charCodeAt(0));
+  }
+  async function storePushSubscription(subscription){
+    const {error}=await supabase.from('push_subscriptions').upsert({
+      user_id:currentUser.id,
+      endpoint:subscription.endpoint,
+      subscription:subscription.toJSON()
+    },{onConflict:'endpoint'});
+    if(error)throw error;
+  }
+  async function updatePushNotificationButton(){
+    const button=$('pushNotificationsBtn');
+    if(!currentUser)return;
+    if(!window.isSecureContext||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+      button.disabled=true;button.textContent='Notifications unavailable';return;
+    }
+    if(Notification.permission==='denied'){
+      button.disabled=true;button.textContent='Notifications blocked';return;
+    }
+    button.disabled=false;
+    try{
+      const registration=await navigator.serviceWorker.getRegistration(pushScopeUrl());
+      const subscription=registration?await registration.pushManager.getSubscription():null;
+      button.textContent=subscription?'Disable notifications':'Enable notifications';
+    }catch{button.textContent='Enable notifications';}
+  }
+  async function togglePushNotifications(){
+    const button=$('pushNotificationsBtn');
+    button.disabled=true;
+    try{
+      if(!window.isSecureContext||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+        throw new Error('Browser push requires a supported browser and the HTTPS app address.');
+      }
+      const scope=pushScopeUrl();
+      let registration=await navigator.serviceWorker.getRegistration(scope);
+      let subscription=registration?await registration.pushManager.getSubscription():null;
+      if(subscription){
+        const {error}=await supabase.from('push_subscriptions').delete().eq('endpoint',subscription.endpoint).eq('user_id',currentUser.id);
+        await subscription.unsubscribe();
+        if(error)throw error;
+        toast('Browser notifications disabled on this device.');
+      }else{
+        let permission=Notification.permission;
+        if(permission==='default')permission=await Notification.requestPermission();
+        if(permission!=='granted')throw new Error('Allow notifications in your browser to receive appointment alerts.');
+        registration=await navigator.serviceWorker.register(new URL('sw.js',document.baseURI),{scope});
+        const {data,error}=await supabase.functions.invoke('send-appointment-push',{body:{action:'public-key'}});
+        if(error)throw error;
+        if(!data?.success||!data.public_key)throw new Error(data?.error||'Push notification setup is incomplete.');
+        subscription=await registration.pushManager.subscribe({
+          userVisibleOnly:true,
+          applicationServerKey:base64UrlToBytes(data.public_key)
+        });
+        try{await storePushSubscription(subscription);}
+        catch(error){await subscription.unsubscribe();throw error;}
+        toast('Browser notifications enabled on this device.');
+      }
+    }catch(error){toast(error?.message||'Could not update browser notifications.');}
+    finally{button.disabled=false;await updatePushNotificationButton();}
+  }
+  async function removePushSubscriptionBeforeSignOut(){
+    if(!currentUser||!('serviceWorker' in navigator))return;
+    const registration=await navigator.serviceWorker.getRegistration(pushScopeUrl());
+    const subscription=registration?await registration.pushManager.getSubscription():null;
+    if(!subscription)return;
+    const {error}=await supabase.from('push_subscriptions').delete().eq('endpoint',subscription.endpoint).eq('user_id',currentUser.id);
+    await subscription.unsubscribe();
+    if(error)throw error;
+  }
   async function invokeEmployeeManagement(action,payload={}){
     const {data,error}=await supabase.functions.invoke('admin-manage-employees',{body:{action,...payload}});
     if(error){
@@ -634,6 +724,49 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     }
     if(!data||data.success!==true)throw new Error(data?.error||'The server did not confirm the employee account action.');
     return data;
+  }
+  async function invokePushFunction(action,payload={}){
+    const {data,error}=await supabase.functions.invoke('send-appointment-push',{body:{action,...payload}});
+    if(error)throw error;
+    if(!data||data.success!==true)throw new Error(data?.error||'The notification service did not confirm the request.');
+    return data;
+  }
+  async function loadPushRecipients(){
+    const list=$('pushRecipientList');
+    const message=$('pushRecipientMessage');
+    const saveButton=$('savePushRecipientsBtn');
+    list.textContent='Loading colleagues…';saveButton.disabled=true;
+    try{
+      const data=await invokePushFunction('list-employees');
+      list.replaceChildren();
+      if(!(data.employees||[]).length){list.textContent='No active colleague accounts found.';return;}
+      data.employees.forEach(employee=>{
+        const label=document.createElement('label');label.className='push-recipient-option';
+        const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=employee.user_id;checkbox.checked=Boolean(employee.selected);
+        const text=document.createElement('span');
+        const name=document.createElement('strong');name.textContent=employee.username+(employee.display_name?` — ${employee.display_name}`:'');
+        const status=document.createElement('small');status.textContent=employee.browser_enabled?'Browser notifications enabled':'Needs to enable notifications in their browser';
+        text.append(name,status);label.append(checkbox,text);list.appendChild(label);
+      });
+      message.textContent='Choose the colleagues who should also receive new appointment alerts.';message.className='employee-admin-message';
+    }catch(error){
+      list.textContent='Could not load colleagues.';
+      message.textContent=`Could not load notification recipients: ${error.message||'Check the send-appointment-push Edge Function.'}`;
+      message.className='employee-admin-message error';
+    }finally{saveButton.disabled=false;}
+  }
+  async function savePushRecipients(){
+    const message=$('pushRecipientMessage');
+    const button=$('savePushRecipientsBtn');
+    if(!currentUser||!isAdmin(currentUser)){message.textContent='Administrator access is required.';message.className='employee-admin-message error';return;}
+    const user_ids=Array.from($('pushRecipientList').querySelectorAll('input[type="checkbox"]:checked')).map(input=>input.value);
+    button.disabled=true;button.textContent='Saving…';message.textContent='Saving notification recipients…';message.className='employee-admin-message';
+    try{
+      const data=await invokePushFunction('save-recipients',{user_ids});
+      await loadPushRecipients();
+      message.textContent=`Saved. ${data.selected_count} colleague${data.selected_count===1?'':'s'} selected.`;message.className='employee-admin-message success';
+    }catch(error){message.textContent=`Could not save recipients: ${error.message||'Notification settings could not be saved.'}`;message.className='employee-admin-message error';}
+    finally{button.disabled=false;button.textContent='Save employee recipients';}
   }
   async function loadManagedEmployees(){
     const select=$('employeeToManage');
@@ -710,8 +843,18 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   function subscribeToChanges(){
     if(realtimeChannel)supabase.removeChannel(realtimeChannel);
     realtimeChannel=supabase.channel('appointments-live')
-      .on('postgres_changes',{event:'*',schema:'public',table:'appointments'},()=>loadAppointments())
+      .on('postgres_changes',{event:'*',schema:'public',table:'appointments'},payload=>{
+        loadAppointments();
+        if(payload.eventType==='INSERT')showAppointmentCreatedAlert();
+      })
       .subscribe();
+  }
+  async function showAppointmentCreatedAlert(){
+    if(!currentUser)return;
+    if(isAdmin(currentUser)){toast('New appointment created.');return;}
+    const {data,error}=await supabase.from('push_notification_recipients')
+      .select('user_id').eq('user_id',currentUser?.id).maybeSingle();
+    if(!error&&data)toast('New appointment added to the schedule.');
   }
   function monthAppointments(){
     const y=shownMonth.getFullYear(),m=shownMonth.getMonth();
@@ -1019,7 +1162,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       if(error)throw error;
       if(!data || data.success!==true)throw new Error(data?.error || 'The server did not confirm account creation.');
       message.textContent=`Colleague account created: ${display_name} (username: ${username}). Share the username and PIN privately.`;
-      message.className='employee-admin-message success';$('createEmployeeForm').reset();await loadManagedEmployees();
+      message.className='employee-admin-message success';$('createEmployeeForm').reset();await loadManagedEmployees();await loadPushRecipients();
     }catch(err){
       console.error('Smart Schedule admin-create-employee error:', err);
       let detail = err?.message || 'Could not create colleague account.';
@@ -1043,6 +1186,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   });
 
   $('refreshEmployeeListBtn').onclick=loadManagedEmployees;
+  $('savePushRecipientsBtn').onclick=savePushRecipients;
   $('resetEmployeePinBtn').onclick=async()=>{
     const message=$('employeeManagementMessage');
     const username=$('employeeToManage').value;
@@ -1075,11 +1219,14 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       message.textContent=`User ${username} was deleted.`;
       message.className='employee-admin-message success';
       await loadManagedEmployees();
+      await loadPushRecipients();
     }catch(error){message.textContent=`Could not delete user: ${error.message}`;message.className='employee-admin-message error';}
     finally{button.disabled=false;button.textContent='Delete user';}
   };
 
+  $('pushNotificationsBtn').onclick=togglePushNotifications;
   $('signOutBtn').onclick=async()=>{
+    try{await removePushSubscriptionBeforeSignOut();}catch(error){console.warn('Could not remove push subscription during sign out:',error);}
     const {error}=await supabase.auth.signOut();
     if(error)toast(error.message);else {localStorage.removeItem('smartScheduleRememberedName');showLogin();}
   };
@@ -1154,6 +1301,11 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       if(duplicateSlot){toast('That session was just booked by someone else. Choose another available session.');await loadAppointments();}
       else toast(`Could not save: ${result.error.message}`);
       return;
+    }
+    if(!wasEditing&&result.data?.id){
+      void supabase.functions.invoke('send-appointment-push',{body:{action:'notify-appointment',appointment_id:result.data.id}})
+        .then(({data,error})=>{if(error||!data?.success)console.warn('Appointment push notification failed:',error||data?.error);})
+        .catch(error=>console.warn('Appointment push notification failed:',error));
     }
     editingAppointmentId=null;
     selectedDate=payload.appointment_date;
