@@ -401,7 +401,7 @@ form{padding:20px 22px}
     </div>
     <div class="top-actions">
       <div class="user-chip"><span class="avatar" id="userAvatar">U</span><span id="userEmail">Signed in</span></div>
-      <button class="btn" id="pushNotificationsBtn" type="button">Enable notifications</button>
+      <button class="btn" id="pushNotificationsBtn" type="button" style="display:none">Enable notifications</button>
       <button class="btn" id="signOutBtn">Sign out</button>
    </div>
   </header>
@@ -657,18 +657,32 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   async function updatePushNotificationButton(){
     const button=$('pushNotificationsBtn');
     if(!currentUser)return;
-    if(!window.isSecureContext||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
-      button.disabled=true;button.textContent='Notifications unavailable';return;
-    }
-    if(Notification.permission==='denied'){
-      button.disabled=true;button.textContent='Notifications blocked';return;
-    }
-    button.disabled=false;
+    const administrator=isAdmin(currentUser);
     try{
       const registration=await navigator.serviceWorker.getRegistration(pushScopeUrl());
       const subscription=registration?await registration.pushManager.getSubscription():null;
-      button.textContent=subscription?'Disable notifications':'Enable notifications';
-    }catch{button.textContent='Enable notifications';}
+      let selectedByAdmin=administrator;
+      if(!administrator){
+        const {data,error}=await supabase.from('push_notification_recipients')
+          .select('user_id').eq('user_id',currentUser.id).maybeSingle();
+        if(error)throw error;
+        selectedByAdmin=Boolean(data);
+      }
+      if(!selectedByAdmin&&!subscription){button.style.display='none';return;}
+      button.style.display='';
+      if(!window.isSecureContext||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+        button.disabled=true;button.textContent='Notifications unavailable';return;
+      }
+      if(Notification.permission==='denied'&&!subscription){
+        button.disabled=true;button.textContent='Notifications blocked';return;
+      }
+      button.disabled=false;
+      button.textContent=subscription?'Disable notifications':administrator?'Enable notifications':'Allow notifications';
+    }catch{
+      button.style.display=administrator?'':'none';
+      button.disabled=!administrator;
+      button.textContent=administrator?'Enable notifications':'Notifications unavailable';
+    }
   }
   async function togglePushNotifications(){
     const button=$('pushNotificationsBtn');
@@ -686,6 +700,12 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
         if(error)throw error;
         toast('Browser notifications disabled on this device.');
       }else{
+        if(!isAdmin(currentUser)){
+          const {data:access,error:accessError}=await supabase.from('push_notification_recipients')
+            .select('user_id').eq('user_id',currentUser.id).maybeSingle();
+          if(accessError)throw accessError;
+          if(!access)throw new Error('Your administrator has not enabled notification access for your account.');
+        }
         let permission=Notification.permission;
         if(permission==='default')permission=await Notification.requestPermission();
         if(permission!=='granted')throw new Error('Allow notifications in your browser to receive appointment alerts.');
@@ -727,7 +747,18 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   }
   async function invokePushFunction(action,payload={}){
     const {data,error}=await supabase.functions.invoke('send-appointment-push',{body:{action,...payload}});
-    if(error)throw error;
+    if(error){
+      let detail=error.message||'The notification service returned an error.';
+      if(error.context&&typeof error.context.clone==='function'){
+        try{
+          const response=error.context;
+          const body=await response.clone().json();
+          if(body?.error)detail=body.error;
+          if(response.status)detail+=` (HTTP ${response.status})`;
+        }catch{}
+      }
+      throw new Error(detail);
+    }
     if(!data||data.success!==true)throw new Error(data?.error||'The notification service did not confirm the request.');
     return data;
   }
@@ -1225,6 +1256,7 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   };
 
   $('pushNotificationsBtn').onclick=togglePushNotifications;
+  window.addEventListener('focus',()=>{if(currentUser)updatePushNotificationButton();});
   $('signOutBtn').onclick=async()=>{
     try{await removePushSubscriptionBeforeSignOut();}catch(error){console.warn('Could not remove push subscription during sign out:',error);}
     const {error}=await supabase.auth.signOut();
