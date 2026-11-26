@@ -345,7 +345,115 @@ form{padding:20px 22px}
 @media screen {
   .time-set-hint{display:block;color:#7185a1;font-size:10px;line-height:1.35;margin-top:5px}
 }
-</style>
+
+/* Global appointment search */
+.schedule-search{position:relative;margin:-12px 0 22px;z-index:5}
+.schedule-search label{display:block;margin:0 0 7px;color:#526568;font-size:12px;font-weight:700}
+.search-box{display:flex;align-items:center;gap:10px;max-width:650px;padding:0 14px;border:1px solid #dce4df;border-radius:13px;background:#fffefa;box-shadow:0 5px 16px rgba(29,48,52,.045)}
+.search-box:focus-within{border-color:#4c9282;box-shadow:0 0 0 3px rgba(23,107,97,.12)}
+.search-icon{font-size:17px;color:#718083}
+.search-box input{width:100%;height:46px;border:0;outline:0;background:transparent;color:#253b3e;font:inherit}
+.search-results{display:none;position:absolute;top:100%;left:0;width:min(650px,100%);max-height:360px;overflow:auto;margin-top:7px;padding:6px;border:1px solid #e1e7e2;border-radius:13px;background:#fffefa;box-shadow:0 16px 36px rgba(29,48,52,.14)}
+.search-results.open{display:block}
+.search-result{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:10px 11px;border:0;border-radius:9px;background:transparent;text-align:left;color:#203a3b}
+.search-result:hover,.search-result:focus-visible{background:#edf5f1;outline:0}
+.search-result strong{display:block;font-size:12px}
+.search-result small{display:block;margin-top:3px;color:#718083;font-size:10px}
+.search-empty{padding:12px;color:#718083;font-size:12px}
+@media(max-width:650px){.schedule-search{margin:-7px 0 18px}.search-box{max-width:none}}
+/* Colorful calendar alternative */
+@media screen {
+  .calendar-panel{background:linear-gradient(155deg,#fff 0%,#fcfbff 100%);border-color:#e6e3f3}
+  .calendar{gap:8px;padding:8px;border:0;border-radius:18px;overflow:visible;background:linear-gradient(145deg,#f8f5ff,#f3fbff)}
+  .weekday{border:0;border-radius:10px;padding:11px 5px;background:#eeeaff;color:#6550a3;font-size:10px;letter-spacing:.75px}
+  .weekday:nth-child(7n+2){background:#fff0dc;color:#a46521}
+  .weekday:nth-child(7n+3){background:#e5f7ee;color:#247558}
+  .weekday:nth-child(7n+4){background:#e4f3ff;color:#3972a2}
+  .weekday:nth-child(7n+5){background:#fff0f2;color:#a84d68}
+  .weekday:nth-child(7n+6){background:#fff7d9;color:#927020}
+  .weekday:nth-child(7n+7){background:#e9f4ff;color:#476b9d}
+  .day{min-height:112px;padding:9px 8px;border:1px solid #e7e4f0;border-radius:14px;box-shadow:0 3px 10px rgba(66,52,105,.035);background:#f0edff;color:#3e3760}
+  .day:hover{background:#e8e2ff;box-shadow:0 8px 18px rgba(95,75,165,.12);transform:translateY(-1px)}
+  #calendar .day:nth-child(7n+9){background:#fff3e5;border-color:#f3e2ca;color:#73502d}
+  #calendar .day:nth-child(7n+10){background:#eaf8ef;border-color:#d5eddd;color:#315c49}
+  #calendar .day:nth-child(7n+11){background:#eaf5ff;border-color:#d8e9f7;color:#355975}
+  #calendar .day:nth-child(7n+12){background:#fff0f3;border-color:#f3dce2;color:#704254}
+  #calendar .day:nth-child(7n+13){background:#fff9df;border-color:#efe6bd;color:#655a2e}
+  #calendar .day:nth-child(7n+14){background:#eef5ff;border-color:#dce6f6;color:#425772}
+  .day.other{opacity:.48}
+  #calendar .day.selected{background:linear-gradient(145deg,#6657d9,#8d5ce6);border-color:#6855d6;color:#fff;box-shadow:0 9px 22px rgba(103,82,211,.25)}
+  #calendar .day.selected .date-num{color:#fff}
+  #calendar .day.today:not(.selected){box-shadow:inset 0 0 0 2px #ee8c5e,0 4px 12px rgba(238,140,94,.14)}
+  #calendar .day.today:not(.selected) .date-num{background:#ed8858;color:#fff}
+  .count{background:#6758d8;border-color:#6758d8;color:#fff;padding:4px 8px}
+  .day.selected .count{background:#fff;color:#6251cb;border-color:#fff}
+  .day.friday-holiday:not(.past):not(.selected){background:#fff0f4;box-shadow:inset 0 3px 0 #e782a1}
+  .day.friday-holiday:not(.past):not(.selected):hover{background:#ffe5ed}
+  .day.friday-holiday:not(.past):not(.selected) .date-num{color:#b44e70}
+}
+@media(max-width:650px){
+  .calendar{gap:4px;padding:4px}
+  .day{min-height:75px;padding:5px 3px;border-radius:9px}
+  .weekday{border-radius:8px}
+}
+/* Weekly grouping and clearer date labels */
+@media screen {
+  .weekday,.weekday:nth-child(n){background:#e9eaf1;color:#434b5d;font-size:12px;font-weight:800}
+  .day.other{opacity:1}
+  #calendar .day:nth-child(n+8):nth-child(-n+14){background:#edf3ff;border-color:#dbe5fb}
+  #calendar .day:nth-child(n+15):nth-child(-n+21){background:#edf8f1;border-color:#d8eddf}
+  #calendar .day:nth-child(n+22):nth-child(-n+28){background:#f3efff;border-color:#e4dcf7}
+  #calendar .day:nth-child(n+29):nth-child(-n+35){background:#fff3e8;border-color:#f3e1cf}
+  #calendar .day .date-num{color:#151923;font-size:16px;font-weight:800}
+  #calendar .day.past:not(.selected):not(.today){color:#151923}
+  #calendar .day.past:not(.selected):not(.today) .date-num{color:#151923}
+  #calendar .day.today:not(.selected) .date-num{color:#fff}
+  #calendar .day.selected{background:linear-gradient(145deg,#6657d9,#8d5ce6);border-color:#6855d6;color:#fff;box-shadow:0 9px 22px rgba(103,82,211,.25)}
+  #calendar .day.selected .date-num{color:#fff}
+  #calendar .day.friday-holiday:not(.past):not(.selected){background:#fff0f4;border-color:#f3d9e1;box-shadow:inset 0 3px 0 #e782a1}
+  #calendar .day.friday-holiday:not(.past):not(.selected) .date-num{color:#151923}
+}
+/* Magenta appointment indicators */
+@media screen {
+  #calendar .count{background:#d81b75;border-color:#d81b75;color:#fff}
+  #calendar .day.selected .count{background:#d81b75;border-color:#d81b75;color:#fff}
+  #calendar .day.appointment-day:not(.past)::after{background:#d81b75}
+}
+/* Highlight Sunday and Wednesday labels */
+@media screen {
+  #calendar .weekday:nth-child(2), #calendar .weekday:nth-child(5){color:#d81b75}
+}
+/* Refined welcome and sign-in choice screen */
+@media screen {
+  #choiceScreen{background:radial-gradient(ellipse at 15% 12%,#eee9ff 0,transparent 38%),radial-gradient(ellipse at 88% 84%,#e6f7f4 0,transparent 35%),#f5f7fb}
+  #choiceScreen .auth-card{width:min(500px,100%);padding:34px;border-color:#e5e5ef;border-radius:24px;background:rgba(255,255,255,.96);box-shadow:0 28px 80px rgba(46,45,91,.12)}
+  #choiceScreen .brand{margin-bottom:30px!important}
+  #choiceScreen .welcome-title{margin:0 0 7px;color:#20243a;font-size:28px;letter-spacing:-.8px}
+  #choiceScreen .welcome-subtitle{margin:0;color:#778097;font-size:14px;line-height:1.5}
+  #choiceScreen .login-choice{gap:13px;margin-top:26px}
+  #choiceScreen .choice-btn{min-height:88px;padding:16px;border:1px solid #e7e7f0;border-radius:17px;background:#fff;gap:14px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+  #choiceScreen .choice-btn:hover{transform:translateY(-2px);border-color:#c9c2f2;box-shadow:0 12px 26px rgba(67,59,128,.1)}
+  #choiceScreen .choice-icon{width:48px;height:48px;border-radius:15px;background:#f0edff;color:#6d55cc;font-size:22px}
+  #choiceScreen .colleague-option .choice-icon{background:#e8f6f2;color:#23836f}
+  #choiceScreen .choice-copy{display:grid;gap:5px;min-width:0}
+  #choiceScreen .choice-copy strong{color:#252941;font-size:15px;letter-spacing:-.15px}
+  #choiceScreen .choice-copy small{color:#778097;font-size:12px;line-height:1.45}
+  #choiceScreen .choice-arrow{margin-left:auto;color:#a2a5b6;font-size:20px;transition:transform .18s ease,color .18s ease}
+  #choiceScreen .choice-btn:hover .choice-arrow{transform:translateX(3px);color:#6d55cc}
+}
+@media(max-width:520px){
+  #choiceScreen .auth-card{padding:25px 20px;border-radius:20px}
+  #choiceScreen .choice-btn{min-height:80px;padding:13px;gap:11px}
+  #choiceScreen .choice-icon{width:42px;height:42px;border-radius:13px}
+  #choiceScreen .choice-copy small{font-size:11px}
+}
+/* Sign-in role icons */
+@media screen {
+  #choiceScreen .king-icon{font-size:30px;line-height:1}}
+/* Consistent colleague group mark */
+@media screen {
+  #choiceScreen .colleague-group-icon svg{display:block;width:29px;height:29px;fill:currentColor}
+}</style>
 </head>
 <body>
 <div class="auth-wrap" id="choiceScreen">
@@ -354,14 +462,14 @@ form{padding:20px 22px}
       <div class="logo">S</div>
       <div><h1>Smart Schedule</h1><p>Measurement Appointment</p></div>
     </div>
-    <h2>Welcome</h2>
-    <p>Select how you want to sign in.</p>
+    <h2 class="welcome-title">Welcome</h2>
+    <p class="welcome-subtitle">Choose how you’d like to access your schedule.</p>
     <div class="login-choice">
-      <button class="choice-btn" id="adminChoice" type="button">
-        <span class="choice-icon">♙</span><span><strong>Admin Login</strong><small>Administrator access and system management</small></span>
+      <button class="choice-btn admin-option" id="adminChoice" type="button">
+        <span class="choice-icon king-icon" aria-hidden="true">♔</span><span class="choice-copy"><strong>Admin Login</strong><small>Administrator access and system management</small></span><span class="choice-arrow" aria-hidden="true">→</span>
       </button>
-      <button class="choice-btn" id="employeeChoice" type="button">
-        <span class="choice-icon">♧</span><span><strong>Colleague Login</strong><small>Open the appointment calendar with your username and PIN</small></span>
+      <button class="choice-btn colleague-option" id="employeeChoice" type="button">
+        <span class="choice-icon colleague-group-icon" aria-hidden="true"><svg viewBox="0 0 36 36" focusable="false"><circle cx="18" cy="10" r="4.2"/><circle cx="7.8" cy="13" r="3.2"/><circle cx="28.2" cy="13" r="3.2"/><path d="M9.5 27c.4-5.3 3.4-8.2 8.5-8.2s8.1 2.9 8.5 8.2c.1 1.1-.7 2-1.8 2H11.3c-1.1 0-1.9-.9-1.8-2Z"/><path d="M2.4 26c.3-4.2 2.2-6.5 5.7-6.5 1.4 0 2.5.4 3.4 1.2-1.3 1.7-2.1 4-2.3 7H4.2c-1.1 0-1.9-.7-1.8-1.7ZM27.8 27.7c-.2-3-.9-5.3-2.3-7 .9-.8 2-1.2 3.4-1.2 3.5 0 5.4 2.3 5.7 6.5.1 1-.7 1.7-1.8 1.7h-5Z"/></svg></span><span class="choice-copy"><strong>Colleague Login</strong><small>Open the appointment calendar with your username and PIN</small></span><span class="choice-arrow" aria-hidden="true">→</span>
       </button>
     </div>
     <div class="auth-message" id="choiceMessage"></div>
@@ -406,6 +514,12 @@ form{padding:20px 22px}
    </div>
   </header>
 
+  <section class="schedule-search" aria-label="Search appointments">
+    <label for="appointmentSearch">Search appointments</label>
+    <div class="search-box"><span class="search-icon" aria-hidden="true">⌕</span><input id="appointmentSearch" type="search" autocomplete="off" placeholder="Search client, phone, address, salesperson…" aria-controls="appointmentSearchResults" aria-expanded="false"></div>
+    <div class="search-results" id="appointmentSearchResults" role="listbox" aria-label="Matching appointments"></div>
+  </section>
+
   <section class="employee-admin-panel" id="employeeAdminPanel">
     <h3>Colleague account management</h3>
     <p>Create login details for your colleagues. Only the administrator can access this section.</p>
@@ -447,6 +561,7 @@ form{padding:20px 22px}
       <div class="stat"><span>Appointments this month</span><strong id="monthCount">0</strong></div>
       <div class="stat"><span>Pending</span><strong id="pendingCount">0</strong></div>
       <div class="stat"><span>Completed</span><strong id="completedCount">0</strong></div>
+      <button class="btn primary" id="globalAddAppointment" type="button">＋ Add appointment</button>
     </div>
   </section>
 
@@ -480,9 +595,7 @@ form{padding:20px 22px}
       <div class="appointment-list" id="appointmentList">
         <div class="empty"><div class="empty-icon">▦</div><strong>No appointments yet</strong><span>Select a date or create a new appointment.</span></div>
       </div>
-      <button class="btn" id="printDayBtn" type="button" style="width:100%;margin-top:10px">🖨 Print selected day</button>
-      <button class="btn primary side-add" id="sideAdd">＋ Add appointment</button>
-      <div class="note">Appointments are stored in your shared Supabase database. Changes are synchronized for signed-in employees.</div>
+      <button class="btn" id="printDayBtn" type="button" style="width:100%;margin-top:10px">🖨 Print all</button>
     </aside>
   </main>
 </div>
@@ -942,9 +1055,6 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     $('selectedSub').textContent=isPastDate
       ? (isAdmin(currentUser)?'Past appointment log — administrators can delete':'Past appointment log — read only')
       : 'Appointments scheduled for this date';
-    $('sideAdd').disabled=isPastDate;
-    $('sideAdd').textContent=isPastDate?'Past dates are read-only':'＋ Add appointment';
-    $('sideAdd').title=isPastDate?'Past dates are read-only':'Add appointment';
     const items=appointments.filter(a=>a.date===selectedDate).sort((a,b)=>(a.time24||'').localeCompare(b.time24||''));
     $('dayTotal').textContent=`${items.length} ${items.length===1?'appointment':'total'}`;
     const target=$('appointmentList');
@@ -961,13 +1071,33 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px">
         ${canEditAppointment(a,todayKey)?`<button type="button" class="btn print-action" data-edit-appt="${escapeHtml(a.id)}">Edit</button>`:''}
         ${canDeleteAppointment(a,todayKey)?`<button type="button" class="btn print-action danger" data-delete-appt="${escapeHtml(a.id)}">Delete</button>`:''}
-        <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print measurement form</button>
+        <button type="button" class="btn print-action" data-print-appt="${escapeHtml(a.id)}">Print</button>
         <button type="button" class="btn print-action whatsapp" data-whatsapp-appt="${escapeHtml(a.id)}">WhatsApp</button>
         <button type="button" class="btn print-action photos" data-photos-appt="${escapeHtml(a.id)}">Photos</button>
         <button type="button" class="btn print-action map-link" data-map-appt="${escapeHtml(a.id)}">Map</button>
 
       </div>
     </article>`).join('');
+  }
+  function renderAppointmentSearch(){
+    const input=$('appointmentSearch'),results=$('appointmentSearchResults');
+    const query=input.value.trim().toLocaleLowerCase();
+    if(!query){results.classList.remove('open');results.innerHTML='';input.setAttribute('aria-expanded','false');return;}
+    const matches=appointments.filter(a=>[a.client,a.phone,a.address,a.sales,a.measurer,a.requirements,a.notes,a.status]
+      .some(value=>String(value||'').toLocaleLowerCase().includes(query)))
+      .sort((a,b)=>a.date.localeCompare(b.date)||(a.time24||'').localeCompare(b.time24||''));
+    results.innerHTML=matches.length?matches.slice(0,12).map(a=>`<button type="button" class="search-result" role="option" data-search-appt="${escapeHtml(a.id)}"><span><strong>${escapeHtml(a.client||'Unnamed client')}</strong><small>${escapeHtml([a.phone,a.address,a.sales].filter(Boolean).join(' · ')||a.status||'Appointment')}</small></span><span><strong>${escapeHtml(prettyDate(a.date,{day:'numeric',month:'short',year:'numeric'}))}</strong><small>${escapeHtml(a.time||'Time not set')}</small></span></button>`).join(''):`<div class="search-empty">No appointments match “${escapeHtml(input.value.trim())}”.</div>`;
+    if(matches.length>12)results.innerHTML+=`<div class="search-empty">Showing 12 of ${matches.length} matches. Refine your search to see more.</div>`;
+    results.classList.add('open');input.setAttribute('aria-expanded','true');
+  }
+  function openSearchedAppointment(id){
+    const appointment=appointments.find(item=>String(item.id)===String(id));
+    if(!appointment)return;
+    const date=new Date(appointment.date+'T12:00:00');
+    calendarStart=new Date(date);calendarStart.setDate(date.getDate()-((date.getDay()+1)%7));
+    shownMonth=new Date(date.getFullYear(),date.getMonth(),1);selectedDate=appointment.date;
+    $('appointmentSearchResults').classList.remove('open');$('appointmentSearch').setAttribute('aria-expanded','false');
+    render();
   }
   function openModal(id=null){
     const todayKey=iso(new Date());
@@ -1038,8 +1168,8 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
   function openMapLocation(id){
     const appointment=appointments.find(item=>String(item.id)===String(id));
     if(!appointment){toast('Appointment not found.');return;}
-    const location=String(appointment.mapLocation||appointment.address||'').trim();
-    if(!location){toast('Add a Google Maps location or address first.');return;}
+    const location=String(appointment.mapLocation||'').trim();
+    if(!location){window.alert('Location not available');return;}
     let destination='';
     try{
       const parsed=new URL(location);
@@ -1281,7 +1411,19 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     selectedDate=iso(calendarStart);
     render();
   }
-  $('prevMonth').onclick=()=>shiftCalendar(-1);
+    $('appointmentSearch').addEventListener('input',renderAppointmentSearch);
+  $('appointmentSearchResults').addEventListener('click',e=>{
+    const result=e.target.closest('[data-search-appt]');
+    if(result)openSearchedAppointment(result.getAttribute('data-search-appt'));
+  });
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.schedule-search')){$('appointmentSearchResults').classList.remove('open');$('appointmentSearch').setAttribute('aria-expanded','false');}
+  });
+  $('appointmentSearch').addEventListener('keydown',e=>{
+    if(e.key==='Escape'){$('appointmentSearchResults').classList.remove('open');$('appointmentSearch').setAttribute('aria-expanded','false');}
+    if(e.key==='Enter'){$('appointmentSearchResults').querySelector('[data-search-appt]')?.click();}
+  });
+$('prevMonth').onclick=()=>shiftCalendar(-1);
   $('nextMonth').onclick=()=>shiftCalendar(1);
   $('todayBtn').onclick=()=>{const now=new Date();shownMonth=new Date(now.getFullYear(),now.getMonth(),1);calendarStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());calendarStart.setDate(calendarStart.getDate()-((calendarStart.getDay()+1)%7));selectedDate=iso(now);render();};
   $('printDayBtn').onclick=printDay;
@@ -1300,7 +1442,14 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
     if(deleteButton)deleteAppointment(deleteButton.getAttribute('data-delete-appt'));
   });
   $('date').addEventListener('change',refreshTimeOptions);
-  $('sideAdd').onclick=()=>openModal();
+    $('globalAddAppointment').onclick=()=>{
+    if(selectedDate<iso(new Date())){
+      const now=new Date();
+      selectedDate=iso(now);shownMonth=new Date(now.getFullYear(),now.getMonth(),1);
+      calendarStart=new Date(now);calendarStart.setDate(now.getDate()-((now.getDay()+1)%7));render();
+    }
+    openModal();
+  };
   $('closeModal').onclick=$('cancelModal').onclick=closeModal;
   $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
@@ -1375,3 +1524,25 @@ const ONEDRIVE_MASTER_FOLDER_URL = "https://netorg18467752-my.sharepoint.com/:f:
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
